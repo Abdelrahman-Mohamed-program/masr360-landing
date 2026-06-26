@@ -1033,6 +1033,9 @@ function QuestionStep({ step, formData, updateField, onNext, onPrev, isLast, isS
             <img
               src='https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426236/Logo_oeinar.jpg'
               alt="M360 Logo"
+              width="112"
+              height="112"
+              loading="lazy"
               className="w-28 h-28 object-contain rounded-2xl border border-m360-gold/30 bg-m360-card-alt p-2"
             />
           )}
@@ -1040,6 +1043,9 @@ function QuestionStep({ step, formData, updateField, onNext, onPrev, isLast, isS
             <img
               src="https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426244/Mini-logo_rvz9zh.jpg"
               alt="M360 Mini Logo"
+              width="112"
+              height="112"
+              loading="lazy"
               className="w-28 h-28 object-cover rounded-full border border-m360-gold/30 bg-m360-card-alt"
             />
           )}

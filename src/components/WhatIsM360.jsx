@@ -209,6 +209,9 @@ function AnimatedLogoImage() {
         <img
           src="/images.webp"
           alt="M360 Logo"
+          width="208"
+          height="208"
+          loading="lazy"
           className="w-full h-full object-cover"
         />
         {/* Shimmer overlay */}

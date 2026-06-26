@@ -443,7 +443,7 @@ function UploadQuestion({ question, onAnswer }) {
         {preview ? (
           <div className="space-y-4">
             <div className="relative w-full max-w-xs mx-auto rounded-xl overflow-hidden border border-m360-gold/30">
-              <img src={preview} alt="Upload preview" className="w-full h-48 object-cover" />
+              <img src={preview} alt="Upload preview" width="384" height="192" className="w-full h-48 object-cover" />
               {submitted && (
                 <motion.div
                   className="absolute inset-0 bg-m360-success/30 flex items-center justify-center"

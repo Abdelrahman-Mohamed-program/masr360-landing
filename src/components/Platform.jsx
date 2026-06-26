@@ -141,6 +141,9 @@ function PlatformCard({ card, index }) {
             <img
               src={card.img}
               alt={card.imgAlt}
+              width="420"
+              height="208"
+              loading="lazy"
               className="absolute inset-0 w-full h-full object-cover"
             />
             {/* Dark overlay for readability + blend with theme */}
