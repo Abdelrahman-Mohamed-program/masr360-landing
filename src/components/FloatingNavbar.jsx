@@ -20,6 +20,7 @@ export default function FloatingNavbar() {
     <AnimatePresence>
       {visible && (
         <motion.nav
+          aria-label="Main navigation"
           className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
             scrolled
               ? 'bg-m360-bg/90 backdrop-blur-md border-b border-m360-gold/20'

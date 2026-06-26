@@ -105,6 +105,7 @@ function PlatformCard({ card, index }) {
   return (
     <motion.article
       ref={cardRef}
+      aria-labelledby={`platform-card-${index}-title`}
       className="relative flex-shrink-0 w-[85vw] sm:w-[380px] md:w-[420px] rounded-2xl overflow-hidden bg-m360-card border border-m360-border group"
       initial={{ opacity: 0, x: direction, scale: 0.92, filter: 'blur(8px)' }}
       animate={isInView ? { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' } : {}}
@@ -172,7 +173,7 @@ function PlatformCard({ card, index }) {
 
       {/* Content */}
       <div className="relative p-5 md:p-6">
-        <h3 className="font-heading text-lg md:text-xl font-bold text-m360-text mb-2 flex items-center gap-2.5">
+        <h3 id={`platform-card-${index}-title`} className="font-heading text-lg md:text-xl font-bold text-m360-text mb-2 flex items-center gap-2.5">
           <span className="text-m360-gold/70">{card.icon}</span>
           {card.title}
         </h3>

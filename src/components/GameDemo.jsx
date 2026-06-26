@@ -300,6 +300,7 @@ function MultipleChoiceQuestion({ question, onAnswer, playCorrect, playWrong }) 
               key={option.id}
               onClick={() => handleSelect(option)}
               disabled={showResult}
+              aria-label={`Option ${option.label}: ${option.text}`}
               className={`relative flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer disabled:cursor-default ${stateClass}`}
               whileHover={!showResult ? { scale: 1.02, y: -2 } : {}}
               whileTap={!showResult ? { scale: 0.98 } : {}}
