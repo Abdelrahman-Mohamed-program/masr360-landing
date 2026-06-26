@@ -14,7 +14,7 @@ const FORM_STEPS = [
     title: 'Governorates Explorer',
     question: 'How excited are you about exploring all 27 Egyptian governorates?',
     type: 'stars',
-    link: `${SITE_URL}/discover`},
+    link: `${SITE_URL}/discover`,
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /><line x1="8" y1="2" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="22" /></svg>
     ),
@@ -24,7 +24,7 @@ const FORM_STEPS = [
     title: 'Places & Attractions',
     question: 'How useful is the Places & Attractions section for discovering hidden gems?',
     type: 'stars',
-    link: `${SITE_URL}/places`},
+    link: `${SITE_URL}/places`,
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
     ),
@@ -34,7 +34,7 @@ const FORM_STEPS = [
     title: 'Nightlife & Events',
     question: 'How likely are you to use the Nightlife & Events guide?',
     type: 'stars',
-    link: `${SITE_URL}/nights`},
+    link: `${SITE_URL}/nights`,
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
     ),
@@ -44,7 +44,7 @@ const FORM_STEPS = [
     title: 'Local Products Marketplace',
     question: 'Would you buy authentic Egyptian products from local makers online?',
     type: 'stars',
-    link: `${SITE_URL}/marketplace`},
+    link: `${SITE_URL}/marketplace`,
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>
     ),
