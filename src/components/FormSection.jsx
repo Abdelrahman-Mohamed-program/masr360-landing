@@ -898,6 +898,8 @@ function RequiredFieldsStep({ formData, updateField, onNext }) {
         value={formData.name}
         onChange={(e) => updateField('name', e.target.value)}
         className={inputClass}
+        aria-label="Your name"
+        aria-required="true"
       />
       <input
         type="email"
@@ -905,11 +907,15 @@ function RequiredFieldsStep({ formData, updateField, onNext }) {
         value={formData.email}
         onChange={(e) => updateField('email', e.target.value)}
         className={inputClass}
+        aria-label="Your email address"
+        aria-required="true"
       />
       <select
         value={formData.city}
         onChange={(e) => updateField('city', e.target.value)}
         className={inputClass}
+        aria-label="Your country"
+        aria-required="true"
       >
         <option value="">Where are you based? (Country)</option>
         {COUNTRIES.map((c) => (
@@ -918,12 +924,14 @@ function RequiredFieldsStep({ formData, updateField, onNext }) {
       </select>
       <div>
         <p className="font-body text-xs text-m360-muted mb-2">Your age range</p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Age range selection">
           {['Under 18', '18–24', '25–34', '35–44', '45+'].map((age) => (
             <button
               key={age}
               type="button"
               onClick={() => updateField('ageRange', age)}
+              role="radio"
+              aria-checked={formData.ageRange === age}
               className={`px-4 py-2.5 rounded-full text-xs font-body font-medium transition-all cursor-pointer ${
                 formData.ageRange === age
                   ? 'bg-m360-gold text-m360-bg shadow-[0_0_12px_rgba(243,174,28,0.3)]'
@@ -936,7 +944,7 @@ function RequiredFieldsStep({ formData, updateField, onNext }) {
         </div>
       </div>
 
-      {error && <p className="font-body text-xs text-m360-error">{error}</p>}
+      {error && <p className="font-body text-xs text-m360-error" role="alert">{error}</p>}
 
       <motion.button
         type="button"
@@ -1171,7 +1179,7 @@ function QuestionStep({ step, formData, updateField, onNext, onPrev, isLast, isS
         </motion.div>
       )}
 
-      {error && <p className="font-body text-xs text-m360-error">{error}</p>}
+      {error && <p className="font-body text-xs text-m360-error" role="alert">{error}</p>}
 
       {/* Navigation */}
       <div className="flex gap-3 pt-2">
