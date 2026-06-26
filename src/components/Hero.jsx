@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion'
+import { SITE_URL } from '../config'
 
 const WORDS = ['Egypt.', 'Every', 'corner.', 'One', 'platform.']
 
@@ -194,7 +195,7 @@ function CTAs() {
       </motion.button>
 
       <motion.a
-        href="https://www.m360travel.com"
+        href={SITE_URL}
         target="_blank"
         rel="noopener noreferrer"
         className="btn-physical w-full sm:w-auto px-8 py-3.5 rounded-full border border-m360-gold/50 text-m360-gold font-body font-semibold text-base md:text-lg text-center hover:bg-m360-gold/10 transition-colors duration-300"
