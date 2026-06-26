@@ -1,16 +1,84 @@
-# React + Vite
+# M360 — Egypt's Gamified Tourism Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The first gamified tourism platform for Egypt. Explore 27 governorates, discover places, and play to earn credits.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19** — UI framework
+- **Vite 8** — Build tool with HMR
+- **Tailwind CSS 4** — Utility-first styling
+- **Framer Motion** — Animations and transitions
+- **Formspree** — Form submissions
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the Oxlint configuration
+# Start development server
+npm run dev
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_SITE_URL` | Your site URL (e.g., https://www.m360travel.com) |
+| `VITE_CLOUDINARY_BASE_URL` | Cloudinary base URL for images |
+| `VITE_FORMSPREE_ENDPOINT` | Formspree form endpoint |
+
+## Project Structure
+
+```
+src/
+├── components/     # React components
+│   ├── Hero.jsx           # Landing hero section
+│   ├── WhatIsM360.jsx     # Brand introduction
+│   ├── Platform.jsx       # Platform features
+│   ├── GameDemo.jsx       # Interactive game
+│   ├── FormSection.jsx    # Multi-step survey form
+│   ├── ErrorBoundary.jsx  # Error handling
+│   └── ...
+├── context/        # React context providers
+├── hooks/          # Custom hooks
+├── utils/          # Constants and utilities
+├── config.js       # Centralized configuration
+├── App.jsx         # Main app layout
+└── main.jsx        # Entry point
+```
+
+## Design System
+
+- **Background:** `#0B0B0B`
+- **Gold:** `#F3AE1C`
+- **Cream:** `#EFCF9E`
+- **Muted:** `#9CA3AF`
+- **Font (Headings):** Cinzel (serif)
+- **Font (Body):** Poppins (sans-serif)
+
+## Deployment
+
+Build the project and deploy the `dist/` folder to any static hosting:
+
+```bash
+npm run build
+```
+
+Compatible with Vercel, Netlify, Cloudflare Pages, or any static file host.
+
+## License
+
+MIT
