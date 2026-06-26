@@ -562,6 +562,9 @@ function AppContent() {
 
   return (
     <>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-m360-gold focus:text-m360-bg focus:rounded-lg focus:font-body focus:text-sm focus:shadow-lg">
+        Skip to main content
+      </a>
       {!loaded && <LoadingScreen onComplete={handleLoadComplete} />}
 
       <GoldDust />
@@ -571,7 +574,7 @@ function AppContent() {
       <BackToTop />
       <WelcomeBanner />
 
-      <main className="relative">
+      <main id="main-content" className="relative">
         <Hero loaded={loaded} />
         <SectionDivider />
         <WhatIsM360 />
