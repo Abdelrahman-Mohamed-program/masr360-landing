@@ -12,6 +12,7 @@ import {
   lbEvents,
 } from '../lib/api'
 import { PharaohCrownIcon,ScarabIcon,CartoucheIcon,WasScepterIcon } from './EgyptianIcons'
+import LazyImage from './LazyImage'
 
 const TOTAL_POSSIBLE = 300
 
@@ -456,7 +457,7 @@ function UploadQuestion({ question, onAnswer }) {
         {preview ? (
           <div className="space-y-4">
             <div className="relative w-full max-w-xs mx-auto rounded-xl overflow-hidden border border-m360-gold/30">
-              <img src={preview} alt="Upload preview" width="384" height="192" className="w-full h-48 object-cover" />
+              <LazyImage src={preview} alt="Upload preview" width="384" height="192" className="w-full h-48 object-cover" style={{ aspectRatio: '2/1' }} />
               {submitted && (
                 <motion.div
                   className="absolute inset-0 bg-m360-success/30 flex items-center justify-center"
@@ -1036,7 +1037,7 @@ function ResultsScreen({ credits, answers, onHighlight }) {
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
             >
-         <img src="/svg.webp" alt="" className="max-w-[80px] h-auto mx-auto" />
+         <LazyImage src="/svg.webp" alt="" className="max-w-[80px] h-auto mx-auto" />
 
             </motion.div>
             <h4 className="font-heading text-lg md:text-xl text-m360-gold font-bold">

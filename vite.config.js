@@ -15,8 +15,8 @@ export default defineConfig({
     target: 'esnext',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'framer-motion': ['framer-motion'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules/framer-motion')) return 'framer-motion'
         },
       },
     },

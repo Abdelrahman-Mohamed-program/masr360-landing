@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cachedDoc, lbEvents } from '../lib/api'
 import PharaohIcon from '../components/PharaohIcon'
+import LazyImage from './LazyImage'
 
 export default function FloatingNavbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -44,7 +45,7 @@ export default function FloatingNavbar() {
           <div className="max-w-6xl mx-auto px-4 md:px-8 py-3 flex items-center gap-4">
             {/* Logo */}
             <a href="#hero" className="shrink-0">
-              <img
+              <LazyImage
                 src="/main-logo.webp"
                 alt="M360"
                 width="36"

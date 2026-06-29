@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLottie } from 'lottie-react'
 import Ankh from '../assets/Ankh.json'
+import LazyImage from './LazyImage'
 
 export default function LoadingScreen({ onComplete }) {
   const [visible, setVisible] = useState(true)
@@ -37,10 +38,11 @@ export default function LoadingScreen({ onComplete }) {
             animate={{ opacity: 0.1, scale: 1, filter: 'blur(1px)' }}
             transition={{ delay: 1.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
-            <img
+            <LazyImage
               src="https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426672/Screenshot_2026-06-26_at_1.31.05_AM_kzj2md.webp"
               alt=""
               className="w-72 h-72 md:w-96 md:h-96 object-contain"
+              style={{ aspectRatio: '1/1' }}
             />
           </motion.div>
 

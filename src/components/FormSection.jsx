@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
+import LazyImage from './LazyImage'
 import { FiShare, FiShare2, FiUserPlus } from "react-icons/fi";
 import { COUNTRIES } from '../utils/constants'
 import {
@@ -925,7 +926,7 @@ function RequiredFieldsStep({ formData, updateField, onNext }) {
     <div className="space-y-5 py-4">
       
       <div className="text-center mb-6">
-          <img src="/anums-removebg-preview.webp" alt="" width="80" height="80" loading="lazy" className="max-w-[80px] h-auto mx-auto mb-2" />
+          <LazyImage src="/anums-removebg-preview.webp" alt="" width="80" height="80" className="max-w-[80px] h-auto mx-auto mb-2" style={{ aspectRatio: '1/1' }} />
         <h3 className="font-heading text-lg md:text-xl text-m360-cream font-bold">
           Your Name in the Hall of Pharaohs
         </h3>
@@ -1077,23 +1078,23 @@ function QuestionStep({ step, formData, updateField, onNext, onPrev, isLast, isS
       {(step.showLogo || step.showMiniLogo) && (
         <div className="flex justify-center gap-4">
           {step.showLogo && (
-            <img
+            <LazyImage
               src='https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426236/Logo_oeinar.jpg'
               alt="M360 Logo"
               width="112"
               height="112"
-              loading="lazy"
               className="w-28 h-28 object-contain rounded-2xl border border-m360-gold/30 bg-m360-card-alt p-2"
+              style={{ aspectRatio: '1/1' }}
             />
           )}
           {step.showMiniLogo && (
-            <img
+            <LazyImage
               src="https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426244/Mini-logo_rvz9zh.jpg"
               alt="M360 Mini Logo"
               width="112"
               height="112"
-              loading="lazy"
               className="w-28 h-28 object-cover rounded-full border border-m360-gold/30 bg-m360-card-alt"
+              style={{ aspectRatio: '1/1' }}
             />
           )}
         </div>
@@ -1339,14 +1340,13 @@ function SuccessStep({ name, email, gameCredits, formCredits, onCopy, copySucces
         transition={{ type: 'spring', stiffness: 150, delay: 0.2 }}
       >
         <div className="text-5xl md:text-6xl" style={{ filter: 'drop-shadow(0 0 20px rgba(243,174,28,0.5))' }}>
-    <img
+    <LazyImage
       src="/pharaoh.webp"
       alt="Pharaoh"
       width="40"
       height="48"
-      loading="lazy"
       className="h-10 md:h-12"
-      style={{ filter: 'drop-shadow(0 0 20px rgba(243,174,28,0.5))' }}
+      style={{ filter: 'drop-shadow(0 0 20px rgba(243,174,28,0.5))', aspectRatio: '5/6' }}
     />
   </div>
         {/* Rotating glow ring */}

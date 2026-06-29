@@ -16,6 +16,7 @@ import LoadingScreen from './components/LoadingScreen'
 import PlayNowSection from './components/PlayNowSection'
 import FormSection from './components/FormSection'
 import { ContainerScroll } from "./components/ui/container-scroll-animation"
+import SafeIframe from './components/SafeIframe'
 import { HieroglyphicBg, GoldRadialGlow, FloatingOrbs, ScanlineOverlay } from "./components/ui/ambient-effects"
 import { MorphingText } from "./components/ui/liquid-text"
 
@@ -371,7 +372,10 @@ function FooterSection() {
             <motion.img
               src="https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426236/Logo_oeinar.jpg"
               alt="M360 Logo"
+              loading="lazy"
+              decoding="async"
               className="w-12 md:w-14 h-12 md:h-14 object-contain rounded-xl border border-[#F3AE1C]/20 bg-black/30 p-1"
+              style={{ aspectRatio: '1/1' }}
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
@@ -381,7 +385,10 @@ function FooterSection() {
             <motion.img
               src="https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426244/Mini-logo_rvz9zh.jpg"
               alt="M360 Mini Logo"
+              loading="lazy"
+              decoding="async"
               className="w-12 md:w-14 h-12 md:h-14 object-cover rounded-full border border-[#F3AE1C]/20 bg-black/30"
+              style={{ aspectRatio: '1/1' }}
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
@@ -602,12 +609,7 @@ function WebsitePreviewSection() {
           </div>
         }
       >
-        <iframe
-          src="https://m360travel.com"
-          className="w-full h-full rounded-xl border-0"
-          title="M360 Live Website"
-          loading="lazy"
-        />
+        <SafeIframe src="https://m360travel.com" title="M360 Live Website" />
       </ContainerScroll>
       <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-[#0B0B0B] to-transparent pointer-events-none" />
     </section>

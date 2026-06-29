@@ -83,6 +83,12 @@ body::before {
   color: #0B0B0B;
 }
 
+/* Image loading shimmer skeleton — used by LazyImage */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 /* Range slider — gold thumb */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;

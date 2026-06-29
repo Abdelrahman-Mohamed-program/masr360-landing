@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { EgyptianBorder, FloatingDots } from './EgyptianOrnaments'
+import LazyImage from './LazyImage'
 
 const MORPH_SEQUENCE = [
   { text: 'M', meaning: 'Masr', color: '#F3AE1C' },
@@ -199,13 +200,13 @@ function AnimatedLogoImage() {
         animate={isInView ? { scale: 1, opacity: 1, rotate: 0 } : {}}
         transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
       >
-        <img
+        <LazyImage
           src="/images.webp"
           alt="M360 Logo"
           width="208"
           height="208"
-          loading="lazy"
           className="w-full h-full object-cover"
+          style={{ aspectRatio: '1/1' }}
         />
         {/* Shimmer overlay */}
         <motion.div

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import { EgyptianBorder, FloatingDots } from './EgyptianOrnaments'
 import { SITE_URL } from '../config'
+import LazyImage from './LazyImage'
 
 const CARDS = [
   {
@@ -139,13 +140,13 @@ function PlatformCard({ card, index }) {
         {/* Image if provided */}
         {card.img && (
           <>
-            <img
+            <LazyImage
               src={card.img}
               alt={card.imgAlt}
               width="420"
               height="208"
-              loading="lazy"
               className="absolute inset-0 w-full h-full object-cover"
+              style={{ aspectRatio: '420/208' }}
             />
             {/* Dark overlay for readability + blend with theme */}
             <div className="absolute inset-0 bg-gradient-to-t from-m360-bg/90 via-m360-bg/40 to-m360-bg/30" />
