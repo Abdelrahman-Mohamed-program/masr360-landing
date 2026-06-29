@@ -38,7 +38,7 @@ export default function LoadingScreen({ onComplete }) {
             transition={{ delay: 1.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
             <img
-              src="https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426672/Screenshot_2026-06-26_at_1.31.05_AM_kzj2md.png"
+              src="https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426672/Screenshot_2026-06-26_at_1.31.05_AM_kzj2md.webp"
               alt=""
               className="w-72 h-72 md:w-96 md:h-96 object-contain"
             />

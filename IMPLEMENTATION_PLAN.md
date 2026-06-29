@@ -224,9 +224,9 @@ All files found in `assets/`:
 
 | File | Size | Type | Notes |
 |------|------|------|-------|
-| `Home.png` | 4.8 MB | Screenshot | Live homepage of m360travel.com |
-| `Marketplace.png` | 3.0 MB | Screenshot | Products marketplace page |
-| `places.png` | 3.5 MB | Screenshot | Places & attractions page |
+| `Home.webp` | 4.8 MB | Screenshot | Live homepage of m360travel.com |
+| `Marketplace.webp` | 3.0 MB | Screenshot | Products marketplace page |
+| `places.webp` | 3.5 MB | Screenshot | Places & attractions page |
 | `M360 Book.pdf` | 16.6 MB | Document | Company report (contact, social, team, Linktree URL) |
 | `M360 GL.pdf` | 867 KB | Document | Design system / brand guidelines |
 | `Mini-logo.jpeg` | 108 KB | Logo | Small logo variant |

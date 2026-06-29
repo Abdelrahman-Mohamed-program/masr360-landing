@@ -1,0 +1,23 @@
+{
+  "name": "M360 — Egypt's Gamified Tourism Platform",
+  "short_name": "M360",
+  "description": "The first gamified tourism platform for Egypt. Explore 27 governorates, discover places, and play to earn credits.",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0B0B0B",
+  "background_color": "#0B0B0B",
+  "icons": [
+    {
+      "src": "https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426244/Mini-logo_rvz9zh.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://res.cloudinary.com/dwh6drlr9/image/upload/v1782426236/Logo_oeinar.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
