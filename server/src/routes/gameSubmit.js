@@ -66,36 +66,90 @@ const submit = async (req, res, next) => {
       const waitlistDoc = emailRaw ? await Waitlist.findOne({ email: emailRaw }).lean() : null
       const leaderboard = await topEntries(10)
       return res.json({ doc: publicView(waitlistDoc, existing), changed: false, earned: 0, leaderboard, breakdown })
-    }
+    }const formCredits = existing?.formCredits || 0;
 
-    // First completion — save the scored value.
-    const formCredits = existing?.formCredits || 0
-    const gameCredits = scoredGameCredits
-    const totalCredits = gameCredits + formCredits
+const TOTAL_QUESTIONS = 3;
+const isComplete = answers.length >= TOTAL_QUESTIONS;
 
-    const set = {
-      gameComplete: true,
-      gameAnswers: answers,
-      gameCredits,
-      formCredits,
-      totalCredits,
-      ip,
-      submittedAt: existing?.submittedAt || new Date(),
-    }
-    if (name && !(existing?.name)) set.name = name
-    if (city && !(existing?.city)) set.city = city
-    if (ageRange && !(existing?.ageRange)) set.ageRange = ageRange
+// ---------------------------------------------------------------------
+// PARTIAL GAME (NOT COMPLETE)
+// Save progress only.
+// Do NOT mark game complete.
+// Do NOT award game credits.
+// Do NOT update total credits.
+// ---------------------------------------------------------------------
+if (!isComplete) {
+  const set = {
+    gameAnswers: answers,
+    formCredits,
+    ip,
+    submittedAt: existing?.submittedAt || new Date(),
+  };
 
-    const submissionDoc = await Submission.findOneAndUpdate(
-      email ? { email } : {},
-      { $set: set },
-      { upsert: true, new: true }
-    ).lean()
+  if (name && !existing?.name) set.name = name;
+  if (city && !existing?.city) set.city = city;
+  if (ageRange && !existing?.ageRange) set.ageRange = ageRange;
 
-    const waitlistDoc = emailRaw ? await Waitlist.findOne({ email: emailRaw }).lean() : null
-    const leaderboard = await topEntries(10)
+  const submissionDoc = await Submission.findOneAndUpdate(
+    { email },
+    { $set: set },
+    { upsert: true, new: true }
+  ).lean();
 
-    return res.json({ doc: publicView(waitlistDoc, submissionDoc), changed: true, earned: gameCredits, leaderboard, breakdown })
+  const waitlistDoc = emailRaw
+    ? await Waitlist.findOne({ email: emailRaw }).lean()
+    : null;
+
+  return res.json({
+    doc: publicView(waitlistDoc, submissionDoc),
+    changed: false,
+    earned: 0,
+    gameComplete: false,
+    breakdown,
+  });
+}
+
+// ---------------------------------------------------------------------
+// FULL GAME COMPLETION
+// (Original logic kept intact.)
+// ---------------------------------------------------------------------
+
+const gameCredits = scoredGameCredits;
+const totalCredits = gameCredits + formCredits;
+
+const set = {
+  gameComplete: true,
+  gameAnswers: answers,
+  gameCredits,
+  formCredits,
+  totalCredits,
+  ip,
+  submittedAt: existing?.submittedAt || new Date(),
+};
+
+if (name && !existing?.name) set.name = name;
+if (city && !existing?.city) set.city = city;
+if (ageRange && !existing?.ageRange) set.ageRange = ageRange;
+
+const submissionDoc = await Submission.findOneAndUpdate(
+  { email },
+  { $set: set },
+  { upsert: true, new: true }
+).lean();
+
+const waitlistDoc = emailRaw
+  ? await Waitlist.findOne({ email: emailRaw }).lean()
+  : null;
+
+const leaderboard = await topEntries(10);
+
+return res.json({
+  doc: publicView(waitlistDoc, submissionDoc),
+  changed: true,
+  earned: gameCredits,
+  leaderboard,
+  breakdown,
+});
   } catch (err) {
     next(err)
   }
