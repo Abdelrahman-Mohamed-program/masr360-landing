@@ -20,7 +20,7 @@ export function createApp() {
   app.use(clientIp)
   app.use(
     cors({
-      origin: 'about.m360travel.com',
+      origin: 'https://about.m360travel.com',
       credentials: true,
     })
   )
