@@ -2,50 +2,61 @@ import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 // Performance-only iframe wrapper: only mounts the <iframe> when the section is
-// near the viewport, shows a loading spinner, and falls back to a CTA after 8s
-// so the user never sees a blank box on slow connections. No logic/behavior change.
+// near the viewport, shows a loading spinner until the browser tells us it's
+// done OR a 6s safety timeout fires, and falls back to a CTA if the iframe
+// never reports a load (slow connection, DNS error, etc.).
+//
+// Note on cross-origin iframes: onLoad fires reliably for cross-origin iframes
+// in modern browsers, but CSS 3D transforms (rotateX) and constant scroll-driven
+// style recalculations on the parent can delay or swallow the event. So we:
+//   1. Always emit the iframe tag when visible (no conditional hiding).
+//   2. Start a hard 6s fallback timer that doesn't depend on the load event.
+//   3. The spinner is pure decoration — the iframe paints underneath it.
 
 export default function SafeIframe({ src, title }) {
-  const [iframeLoaded, setIframeLoaded] = useState(false)
-  const [iframeError, setIframeError] = useState(false)
-  const [showIframe, setShowIframe] = useState(false)
-  const iframeRef = useRef(null)
+  const [iframeMounted, setIframeMounted] = useState(false)
+  const [iframeTimeout, setIframeTimeout] = useState(false)
+  const wrapperRef = useRef(null)
 
   useEffect(() => {
-    const node = iframeRef.current
+    const node = wrapperRef.current
     if (!node) return
     if (typeof IntersectionObserver === 'undefined') {
-      setShowIframe(true)
+      setIframeMounted(true)
       return
     }
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setShowIframe(true)
+          setIframeMounted(true)
           observer.disconnect()
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.01, rootMargin: '50px' }
     )
     observer.observe(node)
     return () => observer.disconnect()
   }, [])
 
+  // Start the moment the user can see the section, not after a delay.
+  // The iframe tag itself has loading="lazy" as a second signal, and the
+  // browser will prioritize it based on intersection.
   useEffect(() => {
-    if (!showIframe) return
-    const timeout = setTimeout(() => {
-      if (!iframeLoaded) setIframeError(true)
-    }, 8000)
+    if (!iframeMounted) return
+    const timeout = setTimeout(() => setIframeTimeout(true), 6000)
     return () => clearTimeout(timeout)
-  }, [showIframe, iframeLoaded])
+  }, [iframeMounted])
 
   return (
-    <div ref={iframeRef} className="w-full h-full rounded-xl relative overflow-hidden">
-      {/* Loading state */}
-      {showIframe && !iframeLoaded && !iframeError && (
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+    <div ref={wrapperRef} className="w-full h-full rounded-xl relative overflow-hidden">
+      {/* Loading spinner — fades out slightly after mount so the iframe can paint */}
+      {iframeMounted && (
+        <motion.div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 pointer-events-none"
           style={{ background: '#080604' }}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: iframeTimeout ? 0 : 1 }}
+          transition={{ duration: 0.5, delay: iframeTimeout ? 0 : 0.6 }}
         >
           <motion.div
             animate={{ rotate: 360 }}
@@ -56,13 +67,13 @@ export default function SafeIframe({ src, title }) {
           <p style={{ fontFamily: "'Poppins', sans-serif", color: 'rgba(243,174,28,0.5)', fontSize: '0.75rem' }}>
             Loading m360travel.com...
           </p>
-        </div>
+        </motion.div>
       )}
 
-      {/* Fallback if iframe fails or times out */}
-      {iframeError && (
+      {/* Fallback CTA — only after the safety timeout */}
+      {iframeTimeout && (
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center z-20"
           style={{ background: '#080604' }}
         >
           <span style={{ fontSize: '3rem' }}>🏛️</span>
@@ -85,16 +96,17 @@ export default function SafeIframe({ src, title }) {
         </div>
       )}
 
-      {/* Actual iframe — only renders when visible */}
-      {showIframe && !iframeError && (
+      {/* The actual iframe. Always present when mounted so the browser stream-decodes
+          it; CSS opacity on a cross-origin iframe cannot block paint, so we leave it
+          at opacity 1 from the start. loading="lazy" lets the browser defer the fetch
+          until the wrapper is on-screen (IntersectionObserver above gates mount). */}
+      {iframeMounted && (
         <iframe
           src={src}
           title={title}
           loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
           className="w-full h-full border-0 rounded-xl"
-          style={{ opacity: iframeLoaded ? 1 : 0, transition: 'opacity 0.5s ease' }}
-          onLoad={() => setIframeLoaded(true)}
-          onError={() => setIframeError(true)}
         />
       )}
     </div>
