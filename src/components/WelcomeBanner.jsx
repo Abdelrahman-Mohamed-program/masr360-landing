@@ -1,9 +1,17 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { useGame } from '../context/GameContext'
+import { cachedDoc, lbEvents } from '../lib/api'
 import PharaohIcon from '../components/PharaohIcon'
 
 export default function WelcomeBanner() {
-  const { userName } = useGame()
+  // Welcome message driven by the backend response (m360_doc).
+  const [userName, setUserName] = useState(() => cachedDoc()?.name || '')
+  useEffect(() => {
+    const refresh = () => setUserName(cachedDoc()?.name || '')
+    refresh()
+    lbEvents.addEventListener('lb', refresh)
+    return () => lbEvents.removeEventListener('lb', refresh)
+  }, [])
 
   if (!userName) return null
 

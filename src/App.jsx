@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, useMotionTemplate, useScroll, useTransform } from 'framer-motion'
-import { GameProvider, useGame } from './context/GameContext'
+import { GameProvider } from './context/GameContext'
 import Hero from './components/Hero'
 import WhatIsM360 from './components/WhatIsM360'
 import Platform from './components/Platform'
@@ -302,18 +302,11 @@ function BuildingSection() {
 
 function FooterSection() {
   const socials = [
-    { label: "Instagram", href: "#", icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
-    )},
-    { label: "TikTok", href: "#", icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" /></svg>
-    )},
-    { label: "LinkedIn", href: "#", icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" /><rect x="2" y="9" width="4" height="12" /><circle cx="4" cy="4" r="2" /></svg>
-    )},
-    { label: "Facebook", href: "#", icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
-    )},
+    { label: "Instagram", href: "https://www.instagram.com/m360.travel" },
+    { label: "TikTok", href: "https://www.tiktok.com/@m360.travel" },
+    { label: "LinkedIn", href: "http://linkedin.com/company/m360travel" },
+    { label: "Facebook", href: "https://www.facebook.com/M360.travel" },
+    { label: "WhatsApp", href: "https://wa.me/201101512242" },
   ]
 
   const values = ["Exploration", "Innovation", "Authenticity"]
@@ -446,7 +439,7 @@ function FooterSection() {
                   transition={{ delay: 0.2 + i * 0.1, duration: 0.4 }}
                 >
                   <span className="w-1 h-1 rounded-full bg-[#F3AE1C]/30 group-hover:bg-[#F3AE1C] transition-colors duration-300 flex-shrink-0" />
-                  <span style={{ fontFamily: "'Poppins', sans-serif" }} className="text-m360-muted/40 text-xs group-hover:text-m360-cream/70 transition-colors duration-300">{v}</span>
+                  <span style={{ fontFamily: "'Poppins', sans-serif" }} className="text-white/70 text-xs group-hover:text-white transition-colors duration-300">{v}</span>
                 </motion.div>
               ))}
             </div>
@@ -461,10 +454,8 @@ function FooterSection() {
           >
             <p style={{ fontFamily: "'Poppins', sans-serif" }} className="text-m360-gold/50 text-[10px] uppercase tracking-[0.25em] mb-5">Connect</p>
             <div className="space-y-3">
-              <a href="https://m360travel.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-m360-muted/50 hover:text-m360-gold transition-colors duration-300 text-xs group" style={{ fontFamily: "'Poppins', sans-serif" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+              <a href="https://m360travel.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-white/70 hover:text-white transition-colors duration-300 text-xs group" style={{ fontFamily: "'Poppins', sans-serif" }}>
                 m360travel.com
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-0 group-hover:opacity-70 group-hover:translate-x-0.5 -translate-y-0.5 transition-all duration-300"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
               </a>
               {socials.map((s, i) => (
                 <motion.a
@@ -472,7 +463,7 @@ function FooterSection() {
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 text-m360-muted/40 hover:text-m360-gold transition-colors duration-300 text-xs group"
+                  className="flex items-center gap-2.5 text-white/70 hover:text-white transition-colors duration-300 text-xs group"
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                   initial={{ opacity: 0, x: -10 }}
                   whileInView={{ opacity: 1, x: 0 }}
@@ -480,7 +471,6 @@ function FooterSection() {
                   transition={{ delay: 0.3 + i * 0.08, duration: 0.4 }}
                   whileHover={{ x: 3 }}
                 >
-                  <span className="flex-shrink-0 opacity-40 group-hover:opacity-90 transition-opacity duration-300">{s.icon}</span>
                   {s.label}
                 </motion.a>
               ))}
@@ -495,12 +485,10 @@ function FooterSection() {
             transition={{ delay: 0.3, duration: 0.5 }}
           >
             <p style={{ fontFamily: "'Poppins', sans-serif" }} className="text-m360-gold/50 text-[10px] uppercase tracking-[0.25em] mb-5">Contact</p>
-            <a href="mailto:team@m360travel.com" className="group inline-flex items-center gap-2 text-m360-muted/50 hover:text-m360-gold text-xs transition-colors duration-300 mb-3" style={{ fontFamily: "'Poppins', sans-serif" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+            <a href="mailto:team@m360travel.com" className="group text-white/70 hover:text-white text-xs transition-colors duration-300 mb-3" style={{ fontFamily: "'Poppins', sans-serif" }}>
               team@m360travel.com
             </a>
-            <div className="flex items-center gap-2 text-m360-muted/30 text-xs mt-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 opacity-50"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+            <div className="text-white/70 text-xs mt-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
               Cairo, Egypt
             </div>
           </motion.div>
@@ -518,7 +506,7 @@ function FooterSection() {
                 <a
                   key={l}
                   href="#"
-                  className="block text-m360-muted/30 hover:text-m360-cream/60 transition-colors duration-300 text-xs"
+                  className="block text-white/70 hover:text-white transition-colors duration-300 text-xs"
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >{l}</a>
               ))}
@@ -535,7 +523,7 @@ function FooterSection() {
           transition={{ delay: 0.5, duration: 0.6 }}
         >
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p style={{ fontFamily: "'Poppins', sans-serif" }} className="text-m360-muted/25 text-xs">© 2025 Masr360. All rights reserved.</p>
+            <p style={{ fontFamily: "'Poppins', sans-serif" }} className="text-white/50 text-xs">© 2025 Masr360. All rights reserved.</p>
             <div className="flex items-center gap-1.5 text-m360-muted/20 text-xs" style={{ fontFamily: "'Poppins', sans-serif" }}>
               <span>Egypt</span>
               <span className="text-[#F3AE1C]/30">·</span>
@@ -628,7 +616,6 @@ function WebsitePreviewSection() {
 
 function AppContent() {
   const [loaded, setLoaded] = useState(false)
-  const { userName } = useGame()
 
   // Always start at top on initial load / reload
   useEffect(() => {

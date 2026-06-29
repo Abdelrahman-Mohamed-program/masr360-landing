@@ -21,20 +21,10 @@ export default function WaitlistForm() {
     }
     setError('')
 
-    const entry = {
-      name: name.trim(),
-      email: email.trim(),
-      source: 'waitlist',
-      submittedAt: new Date().toISOString(),
-    }
-    try {
-      const existing = JSON.parse(localStorage.getItem('m360_waitlist') || '[]')
-      existing.push(entry)
-      localStorage.setItem('m360_waitlist', JSON.stringify(existing))
-      localStorage.setItem('m360_user', JSON.stringify(entry))
-    } catch {
-      // localStorage unavailable
-    }
+    // NOTE: this standalone waitlist form is not currently mounted by App.
+    // The canonical join flow lives in FormSection's stage-0 (which calls
+    // POST /api/waitlist). Any new mount should submit there instead of
+    // writing legacy localStorage keys.
 
     setSubmitted(true)
   }

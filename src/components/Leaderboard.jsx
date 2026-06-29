@@ -1,21 +1,37 @@
-import { useState, useEffect, useRef } from 'react'
-import { motion, useInView } from 'framer-motion'
-import { PRESEEDED_LEADERBOARD } from '../utils/constants'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { motion, AnimatePresence, useInView } from 'framer-motion'
+import { cachedLeaderboard, fetchLeaderboard, lbEvents } from '../lib/api'
 
+// The leaderboard is the backend's authoritative view (submissions sorted by
+// totalCredits desc). We paint the cached snapshot instantly on mount, then
+// refetch from the API. We ALSO subscribe to lbEvents — fired by
+// applyResponse — so that when any component (form/game submit) updates
+// m360_lb, we re-read it and refetch from the server.
 function useLeaderboard() {
-  const [entries, setEntries] = useState([])
+  const [entries, setEntries] = useState(() => cachedLeaderboard())
 
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('m360_leaderboard') || '[]')
-      const combined = [...PRESEEDED_LEADERBOARD, ...stored]
-        .sort((a, b) => b.credits - a.credits)
-        .slice(0, 15)
-      setEntries(combined)
-    } catch {
-      setEntries([...PRESEEDED_LEADERBOARD])
-    }
+  const refetch = useCallback(() => {
+    let alive = true
+    fetchLeaderboard(12)
+      .then((rows) => {
+        if (alive && Array.isArray(rows)) setEntries(rows)
+      })
+      .catch(() => {/* keep cached snapshot on failure */})
+    return () => { alive = false }
   }, [])
+
+  // Initial fetch on mount.
+  useEffect(() => {
+    const cleanup = refetch()
+    return cleanup
+  }, [refetch])
+
+  // Re-fetch whenever another component notifies that the leaderboard changed.
+  useEffect(() => {
+    const handler = () => refetch()
+    lbEvents.addEventListener('lb', handler)
+    return () => lbEvents.removeEventListener('lb', handler)
+  }, [refetch])
 
   return entries
 }
@@ -28,6 +44,21 @@ function RankBadge({ rank }) {
     <span className="font-heading text-sm text-m360-muted font-bold w-6 text-center">
       {rank}
     </span>
+  )
+}
+
+// Animated number that smoothly counts up when its value changes.
+function AnimatedCredits({ value, className }) {
+  return (
+    <motion.span
+      className={className}
+      key={value}
+      initial={{ scale: 1.2, color: '#EFCF9E' }}
+      animate={{ scale: 1, color: '#F3AE1C' }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+    >
+      {value}
+    </motion.span>
   )
 }
 
@@ -76,61 +107,86 @@ export default function Leaderboard({ highlightEntry }) {
             </span>
           </div>
 
-          {/* Entries */}
+          {/* Entries — AnimatePresence handles enter/exit when entries are
+              added, removed, or re-ordered. Each entry is keyed by name (stable)
+              so framer-motion tracks the same DOM node across re-renders and
+              animates position + bar + credits smoothly. */}
           <div className="divide-y divide-m360-border/30">
-            {entries.map((entry, i) => {
-              const isHighlight = highlightEntry &&
-                entry.name === highlightEntry.name &&
-                entry.credits === highlightEntry.credits
-              return (
-                <motion.div
-                  key={`${entry.name}-${entry.credits}-${i}`}
-                  className={`relative flex items-center gap-2.5 px-4 py-2 ${
-                    isHighlight ? 'bg-m360-gold/10' : ''
-                  }`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={isInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: 0.3 + i * 0.04, duration: 0.4 }}
-                >
-                  <RankBadge rank={i + 1} />
+            <AnimatePresence initial={false} mode="popLayout">
+              {entries.map((entry, i) => {
+                const credits = entry.totalCredits ?? entry.credits ?? 0
+                // Key by email (unique), not name (collisions crash the list).
+                const id = entry.email || entry.name
+                const isHighlight = highlightEntry &&
+                  entry.email && highlightEntry.email
+                  ? entry.email === highlightEntry.email
+                  : entry.name === highlightEntry.name
+                return (
+                  <motion.div
+                    key={id}
+                    layout
+                    className={`relative flex items-center gap-2.5 px-4 py-2 ${
+                      isHighlight ? 'bg-m360-gold/10' : ''
+                    }`}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+                    transition={{
+                      opacity: { duration: 0.3 },
+                      x: { duration: 0.3 },
+                      layout: { type: 'spring', stiffness: 300, damping: 30 },
+                      height: { duration: 0.3 },
+                      marginBottom: { duration: 0.3 },
+                      paddingTop: { duration: 0.3 },
+                      paddingBottom: { duration: 0.3 },
+                    }}
+                  >
+                    <RankBadge rank={i + 1} />
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`font-body text-sm truncate ${
-                        isHighlight ? 'text-m360-gold font-semibold' : 'text-m360-text'
-                      }`}>
-                        {entry.name}
-                      </span>
-                      {isHighlight && (
-                        <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-m360-gold/20 text-m360-gold font-bold uppercase tracking-wide">
-                          You
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-body text-sm truncate ${
+                          isHighlight ? 'text-m360-gold font-semibold' : 'text-m360-text'
+                        }`}>
+                          {entry.name}
                         </span>
-                      )}
+                        {isHighlight && (
+                          <motion.span
+                            className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-m360-gold/20 text-m360-gold font-bold uppercase tracking-wide"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                          >
+                            You
+                          </motion.span>
+                        )}
+                      </div>
+                      <div className="mt-1 w-full h-1 rounded-full bg-m360-card-alt overflow-hidden">
+                        <motion.div
+                          className={`h-full rounded-full ${
+                            isHighlight
+                              ? 'bg-gradient-to-r from-m360-gold to-m360-cream'
+                              : i < 3
+                                ? 'bg-m360-gold/50'
+                                : 'bg-m360-gold/25'
+                          }`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min((credits / maxCredits) * 100, 100)}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                        />
+                      </div>
                     </div>
-                    <div className="mt-1 w-full h-1 rounded-full bg-m360-card-alt overflow-hidden">
-                      <motion.div
-                        className={`h-full rounded-full ${
-                          isHighlight
-                            ? 'bg-gradient-to-r from-m360-gold to-m360-cream'
-                            : i < 3
-                              ? 'bg-m360-gold/50'
-                              : 'bg-m360-gold/25'
-                        }`}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(entry.credits / maxCredits) * 100}%` }}
-                        transition={{ delay: 0.5 + i * 0.05, duration: 0.8, ease: 'easeOut' }}
-                      />
-                    </div>
-                  </div>
 
-                  <span className={`font-heading text-sm font-bold tabular-nums w-12 text-right ${
-                    isHighlight ? 'text-m360-gold' : i < 3 ? 'text-m360-cream' : 'text-m360-muted'
-                  }`}>
-                    {entry.credits}
-                  </span>
-                </motion.div>
-              )
-            })}
+                    <AnimatedCredits
+                      value={credits}
+                      className={`font-heading text-sm font-bold tabular-nums w-12 text-right ${
+                        isHighlight ? 'text-m360-gold' : i < 3 ? 'text-m360-cream' : 'text-m360-muted'
+                      }`}
+                    />
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
           </div>
 
           {/* Footer */}

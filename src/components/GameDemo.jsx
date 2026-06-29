@@ -1,7 +1,17 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
-import { useGame } from '../context/GameContext'
-import { GAME_QUESTIONS, PRESEEDED_LEADERBOARD } from '../utils/constants'
+import { GAME_QUESTIONS, COUNTRIES } from '../utils/constants'
+import {
+  submitWaitlist,
+  submitGame,
+  fetchLeaderboard,
+  getState,
+  saveGameProgress,
+  clearGameProgress,
+  cachedDoc,
+  lbEvents,
+} from '../lib/api'
+import { PharaohCrownIcon,ScarabIcon,CartoucheIcon,WasScepterIcon } from './EgyptianIcons'
 
 const TOTAL_POSSIBLE = 300
 
@@ -251,7 +261,8 @@ function MultipleChoiceQuestion({ question, onAnswer, playCorrect, playWrong }) 
     setTimeout(() => setCardFlash(null), 600)
 
     setTimeout(() => {
-      onAnswer(correct, question.reward)
+      // Pass the chosen option id so the server can verify against its key.
+      onAnswer(correct, question.reward, option.id)
     }, correct ? 1400 : 2800)
   }
 
@@ -394,7 +405,9 @@ function UploadQuestion({ question, onAnswer }) {
   const handleSubmit = () => {
     if (!file || submitted) return
     setSubmitted(true)
-    setTimeout(() => onAnswer(true, question.reward), 1200)
+    // Challenge (Q3): any uploaded image earns the full reward. We send the
+    // file name as the "answer" — presence is what matters server-side.
+    setTimeout(() => onAnswer(true, question.reward, file?.name || 'uploaded'), 1200)
   }
 
   return (
@@ -587,64 +600,73 @@ function LeaderboardRow({ entry, index, maxCredits, isNew }) {
    ============================================ */
 function InlineLeaderboard({ highlightEntry, compact = false }) {
   const [entries, setEntries] = useState([])
-  const [animatingName, setAnimatingName] = useState(null)
-  const [animCounter, setAnimCounter] = useState(0)
-  const prevHighlightRef = useRef(null)
-  const prevTriggerRef = useRef(0)
-  const { leaderboardUpdateTrigger, userName } = useGame()
+  // Name of the row that should play the "new entry" highlight animation.
+  // Set when the current user's entry first appears or their credits jump.
+  const [animatingId, setAnimatingId] = useState(null)
+  const prevCreditsRef = useRef({}) // name → last-seen credits, to detect jumps
 
-  // Load entries and deduplicate by name (stored entries override preseeded)
-  const loadEntries = useCallback(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('m360_leaderboard') || '[]')
-      const map = new Map()
-      // Preseeded first, stored overrides (stored = actual user data)
-      for (const e of PRESEEDED_LEADERBOARD) {
-        map.set(e.name, { ...e })
-      }
-      for (const e of stored) {
-        const existing = map.get(e.name)
-        if (!existing || e.credits > existing.credits) {
-          map.set(e.name, { ...e })
+  // Load entries from the API. The leaderboard IS the submissions collection
+  // sorted by totalCredits desc (server-side). We fall back to the cached
+  // snapshot on network failure so the board still paints instantly.
+  //
+  // After loading, detect two things to trigger the highlight animation:
+  //   (a) the current user's entry appeared on the board for the first time, or
+  //   (b) the current user's credits jumped (e.g. form submit added 475).
+  // We do NOT change the row key — the row stays mounted and animates in place.
+  const loadEntries = useCallback(async () => {
+    const limit = compact ? 8 : 12
+    const fresh = await fetchLeaderboard(limit)
+    const sorted = [...fresh]
+      .sort((a, b) => b.credits - a.credits || a.name.localeCompare(b.name))
+      .slice(0, limit)
+    setEntries(sorted)
+
+    const me = cachedDoc()
+    // Match by email (unique). Fall back to name only if email is missing.
+    const meId = me?.email || me?.name
+    if (meId) {
+      const found = sorted.find((e) =>
+        e.email && me?.email ? e.email === me.email : e.name === me.name
+      )
+      const prevCredits = prevCreditsRef.current[meId]
+      if (found) {
+        // Trigger animation if: first time seeing them, OR credits changed.
+        const creditsChanged = prevCredits !== undefined && prevCredits !== found.credits
+        const isFirstAppearance = prevCredits === undefined
+        prevCreditsRef.current[meId] = found.credits
+        if (isFirstAppearance || creditsChanged) {
+          setAnimatingId(found.email || found.name)
+          setTimeout(() => setAnimatingId(null), 4000)
         }
       }
-      const combined = [...map.values()]
-        .sort((a, b) => b.credits - a.credits || a.name.localeCompare(b.name))
-        .slice(0, compact ? 8 : 12)
-      setEntries(combined)
-      return combined
-    } catch {
-      const fallback = [...PRESEEDED_LEADERBOARD].slice(0, compact ? 8 : 12)
-      setEntries(fallback)
-      return fallback
     }
+    return sorted
   }, [compact])
 
+  // Initial load.
   useEffect(() => {
     loadEntries()
-  }, [highlightEntry, leaderboardUpdateTrigger, loadEntries])
+  }, [loadEntries])
 
-  // Trigger animation when highlightEntry changes (game end or form submit)
+  // Re-fetch when another component (form submit, game submit) notifies that
+  // the leaderboard changed via lbEvents. loadEntries auto-detects credit
+  // jumps and fires the highlight animation.
+  useEffect(() => {
+    lbEvents.addEventListener('lb', loadEntries)
+    return () => lbEvents.removeEventListener('lb', loadEntries)
+  }, [loadEntries])
+
+  // Also trigger animation when the parent signals a new highlight (game end
+  // or form submit from THIS page). This covers the case where the user just
+  // submitted and the board hasn't refetched yet.
+  const prevHighlightRef = useRef(null)
   useEffect(() => {
     if (highlightEntry && highlightEntry !== prevHighlightRef.current) {
       prevHighlightRef.current = highlightEntry
-      setAnimatingName(highlightEntry.name)
-      setAnimCounter((c) => c + 1)
-      const timer = setTimeout(() => setAnimatingName(null), 4000)
-      return () => clearTimeout(timer)
+      setAnimatingId(highlightEntry.email || highlightEntry.name)
+      setTimeout(() => setAnimatingId(null), 4000)
     }
   }, [highlightEntry])
-
-  // Trigger animation when leaderboardUpdateTrigger changes (form final submit → position update)
-  useEffect(() => {
-    if (leaderboardUpdateTrigger > 0 && leaderboardUpdateTrigger !== prevTriggerRef.current && userName) {
-      prevTriggerRef.current = leaderboardUpdateTrigger
-      setAnimatingName(userName)
-      setAnimCounter((c) => c + 1)
-      const timer = setTimeout(() => setAnimatingName(null), 4000)
-      return () => clearTimeout(timer)
-    }
-  }, [leaderboardUpdateTrigger, userName])
 
   const maxCredits = entries.length > 0 ? entries[0].credits : 1
 
@@ -660,7 +682,7 @@ function InlineLeaderboard({ highlightEntry, compact = false }) {
         <span className="font-body text-[10px] text-m360-muted">Top credit earners</span>
         <motion.span
           className="w-5 h-5 rounded-full bg-m360-gold/15 text-m360-gold text-[10px] font-bold flex items-center justify-center"
-          key={`count-${entries.length}-${animCounter}`}
+          key={entries.length}
           initial={{ scale: 1.4, backgroundColor: 'rgba(243,174,28,0.5)' }}
           animate={{ scale: 1, backgroundColor: 'rgba(243,174,28,0.15)' }}
           transition={{ duration: 0.4 }}
@@ -674,12 +696,11 @@ function InlineLeaderboard({ highlightEntry, compact = false }) {
       >
         <AnimatePresence initial={false} mode="popLayout">
           {entries.map((entry, i) => {
-            const isAnimating = animatingName === entry.name
-            // Stable key: use name + position. Only include animCounter when animating to force remount
-            const rowKey = `${entry.name}-${entry.credits}-${i}${isAnimating ? `-anim-${animCounter}` : ''}`
+            // Highlight matches by email (unique), falls back to name.
+            const isAnimating = animatingId === (entry.email || entry.name)
             return (
               <LeaderboardRow
-                key={rowKey}
+                key={entry.email || entry.name}
                 entry={entry}
                 index={i}
                 maxCredits={maxCredits}
@@ -703,74 +724,147 @@ function InlineLeaderboard({ highlightEntry, compact = false }) {
    - If user already has identity (from form Step 0): show "Welcome" state
      and still trigger leaderboard insert/update with game credits + existing form credits
    ============================================ */
-function ResultsScreen({ credits, onFormSubmit, onGameCreditsOnly }) {
-  const { userName } = useGame()
-  const pct = Math.round((credits / TOTAL_POSSIBLE) * 100)
+function ResultsScreen({ credits, answers, onHighlight }) {
+  // User name for the welcome message — from the backend mirror, not context.
+  const userName = cachedDoc()?.name || ''
+  // The DISPLAYED game credits come from the backend doc (m360_doc) — the
+  // single source of truth. The `credits` prop is only the local running
+  // tally from an in-progress play session; on reload it's 0, so we must NOT
+  // use it. The server scored the answers and saved gameCredits; that's what
+  // we show. Fall back to the prop only when the doc has no gameCredits yet
+  // (e.g. the instant before the server responds).
+  const docGameCredits = cachedDoc()?.gameCredits || 0
+  const displayCredits = docGameCredits > 0 ? docGameCredits : credits
+  const pct = Math.round((displayCredits / TOTAL_POSSIBLE) * 100)
 
-  // Check if user already saved identity (from form Step 0 or previous game)
-  const [identitySaved, setIdentitySaved] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-      return !!saved?.name  // Only true if NAME exists (identity fully saved)
-    } catch { return false }
-  })
-
-  // Re-check identity from context (same-page sync: form Step 0 might submit while game is running)
-  useEffect(() => {
-    if (userName && !identitySaved) {
-      setIdentitySaved(true)
-      try {
-        const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-        if (saved?.name) setName(saved.name)
-        if (saved?.email) setEmail(saved.email)
-      } catch {}
-    }
-  }, [userName, identitySaved])
-
-  const [name, setName] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-      return saved?.name || ''
-    } catch { return '' }
-  })
-  const [email, setEmail] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-      return saved?.email || ''
-    } catch { return '' }
-  })
+  const [status, setStatus] = useState('loading') // loading | needs_identity | claimed | done
   const [error, setError] = useState('')
-  const [formSubmitted, setFormSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
-  // If identity was already saved (user filled form first), auto-trigger leaderboard
-  // This handles: form Step 0 → game → ResultsScreen should add game credits to leaderboard
-  // IMPORTANT: Does NOT call markCompleted — user must still fill form questions
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [country, setCountry] = useState('')
+  const [ageRange, setAgeRange] = useState('')
+
+  // On mount, the decision tree is driven entirely by the backend response:
+  //   - no email in cache, or not in waitlist → needs_identity (show form)
+  //   - in waitlist, game already complete  → done (skip straight to form)
+  //   - in waitlist, game not complete, has identity → auto-submit with email
+  //   - in waitlist, game not complete, no identity  → needs_identity
+  //
+  // m360_doc is the canonical backend mirror (written by applyResponse).
+  // Everything flows from it — never from legacy localStorage keys.
   useEffect(() => {
-    if (identitySaved && !formSubmitted) {
-      const savedName = name || userName
-      if (savedName && onGameCreditsOnly) {
-        // Only add game credits to leaderboard, do NOT mark as completed
-        onGameCreditsOnly(savedName, email, credits)
+    let cancelled = false
+    ;(async () => {
+      const cached = cachedDoc()
+      setStatus('loading')
+      // Only call the server if we have a cached email to validate against.
+      if (cached?.email) {
+        try {
+          const { doc: serverDoc } = await getState(cached.email)
+          if (cancelled) return
+          if (serverDoc) {
+            setName(serverDoc.name || '')
+            setEmail(serverDoc.email || '')
+            setCountry(serverDoc.city || '')
+            setAgeRange(serverDoc.ageRange || '')
+            if (serverDoc.gameComplete) {
+              setStatus('done')
+              return
+            }
+            // Game not complete. If we have identity, auto-submit below.
+            if (serverDoc.inWaitlist && serverDoc.name) {
+              setStatus('needs_identity_filled')
+              return
+            }
+          }
+        } catch {
+          // Network failure: fall through to cache-based decision below.
+        }
       }
-      setFormSubmitted(true)
-    }
-  }, [identitySaved, formSubmitted, name, userName, email, credits, onGameCreditsOnly])
+      if (cancelled) return
+      // No usable server state — decide from the m360_doc cache alone.
+      if (cached?.email && cached?.name) {
+        setName(cached.name || '')
+        setEmail(cached.email || '')
+        setCountry(cached.city || '')
+        setAgeRange(cached.ageRange || '')
+        setStatus('claimed')
+      } else {
+        setStatus('needs_identity')
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
 
-  const handleFormSubmit = (e) => {
+  // When identity is already present, submit the game with that identity.
+  // Handles: user did stage-0 first, OR cache already has their name+email.
+  useEffect(() => {
+    if (status !== 'claimed' && status !== 'needs_identity_filled') return
+    if (!email) return
+    let cancelled = false
+    ;(async () => {
+      setSubmitting(true)
+      try {
+        const res = await submitGame({ email, name, city: country, ageRange, answers })
+        if (cancelled) return
+        onHighlight?.(res.doc)
+      } catch (err) {
+        // Surface the error — don't silently claim success when the game
+        // wasn't actually recorded server-side.
+        setError(err.message || 'Submission failed. Please try again.')
+      } finally {
+        if (!cancelled) {
+          setSubmitting(false)
+          setStatus('done')
+        }
+      }
+    })()
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status])
+
+  // Whenever we land in the 'done' state — whether from a fresh game-end OR
+  // from a page reload where the server already says gameComplete — re-trigger
+  // the leaderboard highlight + re-fetch so the current user's entry animates
+  // on the board. Without this, a reload shows their credits but the
+  // leaderboard never re-highlights them (the highlight only fired on the
+  // original submit, which is now gone).
+  useEffect(() => {
+    if (status !== 'done') return
+    const me = cachedDoc()
+    if (!me) return
+    onHighlight?.(me)
+  }, [status, onHighlight])
+
+
+  // Game-end form: captured identity for a never-seen user. Create the
+  // waitlist identity first, then score the game against it.
+  const handleFormSubmit = useCallback(async (e) => {
     e.preventDefault()
-    if (!name.trim()) {
-      setError('Please enter your name')
-      return
-    }
-    if (!email.trim() || !email.includes('@')) {
-      setError('Please enter a valid email')
-      return
-    }
+    if (!name.trim()) return setError('Please enter your name')
+    if (!email.trim() || !email.includes('@')) return setError('Please enter a valid email')
+    if (!country) return setError('Please select your country')
+    if (!ageRange) return setError('Please select your age range')
     setError('')
-    setFormSubmitted(true)
-    // User explicitly submits name/email → full submit (leaderboard + markCompleted)
-    if (onFormSubmit) onFormSubmit(name, email, credits)
-  }
+    setSubmitting(true)
+    try {
+      // 1. Ensure membership (idempotent).
+      await submitWaitlist({ name, email, city: country, ageRange })
+      // 2. Score the game against this identity.
+      const res = await submitGame({ email, name, city: country, ageRange, answers })
+      onHighlight?.(res.doc)
+      setStatus('done')
+      // applyResponse (inside submitGame) already wrote m360_doc — the backend
+      // response is the single source of truth. No other localStorage writes.
+      clearGameProgress()
+    } catch (err) {
+      setError(err.message || 'Submission failed. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }, [name, email, country, ageRange, answers, onHighlight])
 
   return (
     <motion.div
@@ -810,7 +904,7 @@ function ResultsScreen({ credits, onFormSubmit, onGameCreditsOnly }) {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.6, type: 'spring' }}
         >
-          {credits}
+          {displayCredits}
         </motion.div>
         <span className="font-body text-m360-muted text-sm"> / {TOTAL_POSSIBLE}</span>
       </div>
@@ -825,11 +919,11 @@ function ResultsScreen({ credits, onFormSubmit, onGameCreditsOnly }) {
           />
         </div>
         <p className="font-body text-xs text-m360-muted mt-2 text-center">
-          {credits === TOTAL_POSSIBLE ? (
+          {displayCredits === TOTAL_POSSIBLE ? (
             <span className="text-m360-gold/90">Flawless. Every question answered perfectly.</span>
-          ) : credits >= 200 ? (
+          ) : displayCredits >= 200 ? (
             <span className="text-m360-cream/70">Impressive knowledge. Egypt would be proud.</span>
-          ) : credits >= 100 ? (
+          ) : displayCredits >= 100 ? (
             <span className="text-m360-cream/50">Solid run. You know your way around Egypt.</span>
           ) : (
             <span className="text-m360-muted/70">A good start. There is more to discover.</span>
@@ -839,7 +933,7 @@ function ResultsScreen({ credits, onFormSubmit, onGameCreditsOnly }) {
 
       {/* Waitlist form — claim credits (skip if identity already saved via form) */}
       <AnimatePresence mode="wait">
-        {!formSubmitted && !identitySaved ? (
+        {status === 'needs_identity' && !submitting ? (
           <motion.div
             key="claim-form"
             className="mt-6 p-5 rounded-2xl bg-m360-card/80 border border-m360-gold/30"
@@ -869,6 +963,38 @@ function ResultsScreen({ credits, onFormSubmit, onGameCreditsOnly }) {
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-gold-focus w-full px-4 py-3 rounded-xl bg-m360-card-alt border border-m360-border text-m360-text font-body text-sm placeholder:text-m360-muted/50 transition-all duration-200"
               />
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="input-gold-focus w-full px-4 py-3 rounded-xl bg-m360-card-alt border border-m360-border text-m360-text font-body text-sm transition-all duration-200"
+                aria-label="Your country"
+              >
+                <option value="">Where are you based? (Country)</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <div>
+                <p className="font-body text-xs text-m360-muted mb-2">Your age range</p>
+                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Age range selection">
+                  {['Under 18', '18–24', '25–34', '35–44', '45+'].map((age) => (
+                    <button
+                      key={age}
+                      type="button"
+                      onClick={() => setAgeRange(age)}
+                      role="radio"
+                      aria-checked={ageRange === age}
+                      className={`px-3 py-1.5 rounded-full text-xs font-body font-medium transition-all cursor-pointer ${
+                        ageRange === age
+                          ? 'bg-m360-gold text-m360-bg shadow-[0_0_12px_rgba(243,174,28,0.3)]'
+                          : 'bg-m360-card-alt border border-m360-border text-m360-muted hover:border-m360-gold/50'
+                      }`}
+                    >
+                      {age}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {error && (
                 <p className="font-body text-xs text-red-400">{error}</p>
               )}
@@ -885,6 +1011,17 @@ function ResultsScreen({ credits, onFormSubmit, onGameCreditsOnly }) {
               We'll only email you when we launch. No spam, ever.
             </p>
           </motion.div>
+        ) : status === 'loading' || submitting ? (
+          <motion.div
+            key="submitting"
+            className="mt-6 p-5 rounded-2xl bg-m360-card/80 border border-m360-gold/30 text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <div className="inline-block w-6 h-6 border-2 border-m360-gold/30 border-t-m360-gold rounded-full animate-spin mb-2" />
+            <p className="font-body text-xs text-m360-muted">Securing your leaderboard spot…</p>
+          </motion.div>
         ) : (
           <motion.div
             key="claimed"
@@ -899,7 +1036,8 @@ function ResultsScreen({ credits, onFormSubmit, onGameCreditsOnly }) {
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
             >
-              👑
+         <img src="../../../assets/svg.png" alt="" className="max-w-[80px] h-auto mx-auto" />
+
             </motion.div>
             <h4 className="font-heading text-lg md:text-xl text-m360-gold font-bold">
               Welcome on Board, Pharaoh!
@@ -970,21 +1108,39 @@ function PyramidIcon({ className = '' }) {
 export default function GameDemo() {
   const sectionRef = useRef(null)
   const isInView = useInView(sectionRef, { once: true, margin: '-80px' })
-  const { markGamePlayed, markCompleted, hasPlayedGame, submitWaitlist, triggerLeaderboardInsert } = useGame()
   const { soundOn, setSoundOn, playCorrect, playWrong } = useGameAudio()
+
+  // Backend-driven "has this user completed the game?" gate. We read the
+  // canonical m360_doc mirror; if the server says gameComplete, the Start
+  // button is replaced with a "completed" note. This is a snapshot taken at
+  // render time — the ResultsScreen re-validates against the server on mount.
+  const hasPlayedGame = !!cachedDoc()?.gameComplete
+  // User name for welcome messages — from the backend mirror, not localStorage.
+  const userName = cachedDoc()?.name || ''
 
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [credits, setCredits] = useState(0)
   const creditsRef = useRef(0)
+  // Raw user picks, sent to the backend for server-side scoring. We never
+  // trust the client's own credit tally for the canonical record.
+  const answersRef = useRef([])
   const [showConfetti, setShowConfetti] = useState(false)
   const [showXpPopup, setShowXpPopup] = useState(false)
-  const [gameComplete, setGameComplete] = useState(false)
-  const [hasStarted, setHasStarted] = useState(false)
+  // If the backend already says the game is done (cachedDoc), start in the
+  // "game complete" state so the ResultsScreen renders on reload — which
+  // re-validates against the server (getState) and re-animates the
+  // leaderboard highlight. Without this, a returning user would just see the
+  // static "completed" start screen and never get the animated end layout.
+  const [gameComplete, setGameComplete] = useState(() => !!cachedDoc()?.gameComplete)
+  const [hasStarted, setHasStarted] = useState(() => !!cachedDoc()?.gameComplete)
   const [completedIndices, setCompletedIndices] = useState([])
   const [spotlightPulse, setSpotlightPulse] = useState(false)
   const [highlightEntry, setHighlightEntry] = useState(null)
-
-  const handleAnswer = useCallback((correct, reward) => {
+const handleHighlight = useCallback((doc) => {
+  setHighlightEntry({ name: doc?.name, email: doc?.email, credits: doc?.totalCredits })
+  fetchLeaderboard(12).catch(() => {})
+}, [])
+  const handleAnswer = useCallback((correct, reward, optionId) => {
     if (correct) {
       setShowConfetti(true)
       setShowXpPopup(true)
@@ -1000,19 +1156,25 @@ export default function GameDemo() {
       setTimeout(() => setSpotlightPulse(false), 1000)
     }
 
+    // Record this pick for server-side scoring. We store the option id/label
+    // the user chose; the backend compares against its own answer key.
+    answersRef.current = [
+      ...answersRef.current,
+      { questionId: GAME_QUESTIONS[currentQuestion]?.id, answer: optionId },
+    ]
+    // Persist progress so an unsubmitted game survives a tab close.
+    saveGameProgress({ questionIndex: currentQuestion + 1, picks: answersRef.current })
+
     setTimeout(() => {
       if (currentQuestion < GAME_QUESTIONS.length - 1) {
         setCurrentQuestion((prev) => prev + 1)
       } else {
+        // Game complete. The backend will flag gameComplete on the submission
+        // response; we don't write any localStorage flag here.
         setGameComplete(true)
-        markGamePlayed()
-        // Save game credits to a separate key so form can read them later
-        try {
-          localStorage.setItem('m360_game_credits', String(creditsRef.current))
-        } catch {}
       }
     }, correct ? 1600 : 3000)
-  }, [currentQuestion, markGamePlayed])
+  }, [currentQuestion])
 
   const startGame = () => {
     // One-time trigger: don't allow replay if already played
@@ -1024,6 +1186,25 @@ export default function GameDemo() {
     setGameComplete(false)
     setCompletedIndices([])
   }
+
+  // If the form's step-0 auto-submits the game (user finished the game before
+  // claiming identity), the backend flips gameComplete on m360_doc. GameDemo
+  // doesn't know about that submit, so we subscribe to lbEvents and flip BOTH
+  // hasStarted and gameComplete when the canonical doc says the game is done.
+  // BOTH must be true for the render to show the ResultsScreen (game-end
+  // layout) — the render gate is `hasStarted && gameComplete`. Without
+  // hasStarted, the user would just see the static "completed" start screen
+  // instead of the animated end layout with their scored credits.
+  useEffect(() => {
+    const handler = () => {
+      if (cachedDoc()?.gameComplete) {
+        setHasStarted(true)
+        setGameComplete(true)
+      }
+    }
+    lbEvents.addEventListener('lb', handler)
+    return () => lbEvents.removeEventListener('lb', handler)
+  }, [])
 
   const question = GAME_QUESTIONS[currentQuestion]
 
@@ -1211,74 +1392,8 @@ export default function GameDemo() {
                   <ResultsScreen
                     key="results"
                     credits={credits}
-                    onFormSubmit={(name, email, gameCreditsEarned) => {
-                      // FULL submit: user explicitly entered name/email → save everything + markCompleted
-                      try {
-                        const saved = JSON.parse(localStorage.getItem('m360_user') || 'null') || {}
-                        const savedGameCredits = parseInt(localStorage.getItem('m360_game_credits') || '0', 10)
-                        const previousFormCredits = saved.formCredits || 0
-                        const bestGameCredits = Math.max(saved.gameCredits || 0, savedGameCredits, gameCreditsEarned)
-                        const entry = {
-                          name: name.trim(),
-                          email: email.trim(),
-                          city: saved.city || '',
-                          ageRange: saved.ageRange || '',
-                          gameCredits: bestGameCredits,
-                          formCredits: previousFormCredits,
-                          totalCredits: bestGameCredits + previousFormCredits,
-                          source: 'game',
-                          submittedAt: new Date().toISOString(),
-                        }
-                        localStorage.setItem('m360_user', JSON.stringify(entry))
-                        try { localStorage.removeItem('m360_game_credits') } catch {}
-                      } catch {}
-                      submitWaitlist(name, email)
-                      markCompleted()
-                      // Update leaderboard with game credits only (form credits already there if any)
-                      let totalCredits = gameCreditsEarned
-                      try {
-                        const lb = JSON.parse(localStorage.getItem('m360_leaderboard') || '[]')
-                        const existing = lb.find((e) => e.name === name.trim())
-                        if (existing) {
-                          totalCredits = existing.credits + gameCreditsEarned
-                        }
-                      } catch {}
-                      triggerLeaderboardInsert(name.trim(), totalCredits)
-                      setHighlightEntry({ name: name.trim(), credits: totalCredits })
-                    }}
-                    onGameCreditsOnly={(name, email, gameCreditsEarned) => {
-                      // AUTO submit: identity already exists → only add game credits to leaderboard
-                      // Does NOT call markCompleted — user still needs to fill form questions
-                      try {
-                        const saved = JSON.parse(localStorage.getItem('m360_user') || 'null') || {}
-                        const savedGameCredits = parseInt(localStorage.getItem('m360_game_credits') || '0', 10)
-                        const bestGameCredits = Math.max(saved.gameCredits || 0, savedGameCredits, gameCreditsEarned)
-                        const entry = {
-                          name: saved.name || name.trim(),
-                          email: saved.email || email.trim(),
-                          city: saved.city || '',
-                          ageRange: saved.ageRange || '',
-                          gameCredits: bestGameCredits,
-                          formCredits: saved.formCredits || 0,
-                          totalCredits: bestGameCredits + (saved.formCredits || 0),
-                          source: 'game',
-                          submittedAt: new Date().toISOString(),
-                        }
-                        localStorage.setItem('m360_user', JSON.stringify(entry))
-                        try { localStorage.removeItem('m360_game_credits') } catch {}
-                      } catch {}
-                      // Update leaderboard: add game credits to existing form entry
-                      let totalCredits = gameCreditsEarned
-                      try {
-                        const lb = JSON.parse(localStorage.getItem('m360_leaderboard') || '[]')
-                        const existing = lb.find((e) => e.name === (saved.name || name.trim()))
-                        if (existing) {
-                          totalCredits = existing.credits + gameCreditsEarned
-                        }
-                      } catch {}
-                      triggerLeaderboardInsert(saved.name || name.trim(), totalCredits)
-                      setHighlightEntry({ name: saved.name || name.trim(), credits: totalCredits })
-                    }}
+                    answers={answersRef.current}
+                   onHighlight={handleHighlight}
                   />
                 ) : (
                   <div key={`q${currentQuestion}`} className="relative">

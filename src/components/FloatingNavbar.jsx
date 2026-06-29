@@ -1,12 +1,21 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useGame } from '../context/GameContext'
+import { cachedDoc, lbEvents } from '../lib/api'
 import PharaohIcon from '../components/PharaohIcon'
 
 export default function FloatingNavbar() {
   const [scrolled, setScrolled] = useState(false)
   const [visible, setVisible] = useState(false)
-  const { userName } = useGame()
+  // Welcome message driven by the backend response (m360_doc) — the single
+  // source of truth for identity. We re-read on lbEvents so the badge appears
+  // the moment a form/game submit resolves the user's name server-side.
+  const [userName, setUserName] = useState(() => cachedDoc()?.name || '')
+  useEffect(() => {
+    const refresh = () => setUserName(cachedDoc()?.name || '')
+    refresh()
+    lbEvents.addEventListener('lb', refresh)
+    return () => lbEvents.removeEventListener('lb', refresh)
+  }, [])
 
   useEffect(() => {
     const onScroll = () => {
@@ -34,8 +43,12 @@ export default function FloatingNavbar() {
         >
           <div className="max-w-6xl mx-auto px-4 md:px-8 py-3 flex items-center gap-4">
             {/* Logo */}
-            <a href="#hero" className="font-heading text-lg md:text-xl text-m360-gold font-bold tracking-wider shrink-0">
-              M360
+            <a href="#hero" className="shrink-0">
+              <img
+                src="/main-logo.webp"
+                alt="M360"
+                className="h-9 w-auto"
+              />
             </a>
 
             {/* Spacer pushes the center badge + CTA apart */}

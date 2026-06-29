@@ -1,13 +1,19 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
-import { useGame } from '../context/GameContext'
+import { FiShare, FiShare2, FiUserPlus } from "react-icons/fi";
 import { COUNTRIES } from '../utils/constants'
+import {
+  submitWaitlist,
+  submitForm,
+  submitGame,
+  getState,
+  cachedDoc,
+  fetchLeaderboard,
+  readGameProgress,
+  lbEvents,
+} from '../lib/api'
 import { SITE_URL } from '../config'
 
-/* ============================================
-   FORM STEPS CONFIG — all 22 questions from brief
-   Step 0 = required fields (name, email, country, age)
-   ============================================ */
 const FORM_STEPS = [
   {
     id: 'governorates',
@@ -201,8 +207,6 @@ const FORM_STEPS = [
   },
 ]
 
-const TOTAL_FORM_CREDITS = FORM_STEPS.length * 25 // 450 credits
-
 const SUGGESTION_PLACEHOLDER = 'Share your thoughts, ideas, or suggestions...'
 
 /* ============================================
@@ -314,57 +318,76 @@ function ConfettiBurst() {
 /* ============================================
    MAIN FORM SECTION
 
-   FLOW:
-   - Step 0 (identity): saves name/email/country/age to localStorage + waitlist.
-     Does NOT add to leaderboard (no credits yet).
-     Does NOT call markCompleted.
-   - Questions 1–19: each awards +25 credits
-   - Final submit: inserts/updates leaderboard with total credits + triggers animation
-   - If user already has m360_user (from game ResultsScreen), Step 0 is skipped
+   FLOW (backend-driven):
+   - On mount: read m360_doc. If doc.email exists and doc.inWaitlist → skip
+     step 0 (identity already captured). If doc.formComplete → show success.
+   - Step 0 (identity): POST /api/waitlist to capture identity server-side.
+     Does NOT add credits or leaderboard.
+   - Questions 1–N: each awards +25 local form credits (progress only).
+   - Final submit: POST /api/form/submit → backend flags formComplete, awards
+     formCredits, recomputes totalCredits. The response drives the success UI.
+   - All credits, flags, and rank come from the backend response (m360_doc).
    ============================================ */
 export default function FormSection() {
   const sectionRef = useRef(null)
   const isInView = useInView(sectionRef, { once: true, margin: '-80px' })
-  const {
-    gameCredits,
-    formCredits,
-    addFormCredits,
-    userSubmitted,
-    userName,
-    triggerLeaderboardInsert,
-    triggerLeaderboardUpdate,
-    submitWaitlist,
-    markCompleted,
-  } = useGame()
+
+  // Backend mirror — the single source of truth for identity, flags, credits.
+  // We read it once on mount to seed the form; after each API call,
+  // applyResponse updates localStorage and we re-read via refreshDoc().
+  const [doc, setDoc] = useState(() => cachedDoc())
+
+  // Re-read m360_doc from localStorage (called after each applyResponse).
+  const refreshDoc = useCallback(() => setDoc(cachedDoc()), [])
 
   // ============================================
-  // INITIAL STATE — read from localStorage for persistence across reloads
+  // INITIAL STATE — derived from the backend mirror (m360_doc)
   // ============================================
   const [identityDone, setIdentityDone] = useState(() => {
-    try { return !!localStorage.getItem('m360_user') } catch { return false }
+    const d = cachedDoc()
+    return !!(d?.email && d?.inWaitlist)
   })
 
   const [currentStep, setCurrentStep] = useState(() => {
+    const d = cachedDoc()
+    // Check if identity already completed (should skip step 0)
+    const shouldSkipIdentity = d?.email && d?.inWaitlist
+
+    if (shouldSkipIdentity) {
+      // If identity done, always start at step 1 (after identity)
+      return 1
+    }
+
+    // If identity not done, check for saved progress
     try {
-      if (localStorage.getItem('m360_user')) return 1 // skip step 0 if identity exists
-    } catch {}
+      const savedProgress = localStorage.getItem('m360_form_progress')
+      if (savedProgress !== null) {
+        const parsed = parseInt(savedProgress, 10)
+        if (!isNaN(parsed) && parsed >= 0) {
+          return parsed
+        }
+      }
+    } catch (e) {
+      // Ignore storage errors - fall through to default
+      console.warn('Failed to read form progress from localStorage:', e)
+    }
+
+    // Default: start at step 0 (identity) if no valid saved progress
     return 0
   })
 
   const [formData, setFormData] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-      if (saved) {
-        return {
-          name: saved.name || '',
-          email: saved.email || '',
-          city: saved.city || '',
-          ageRange: saved.ageRange || '',
-          premiumPrice: 50,
-          shareWithFriends: '',
-        }
+    const d = cachedDoc()
+    if (d?.email) {
+      return {
+        name: d.name || '',
+        email: d.email || '',
+        city: d.city || '',
+        ageRange: d.ageRange || '',
+        premiumPrice: 50,
+        shareWithFriends: '',
       }
-    } catch {}
+    }
     return {
       name: '',
       email: '',
@@ -375,56 +398,43 @@ export default function FormSection() {
     }
   })
 
-  // Restore form credits from localStorage on mount (survives reloads)
-  const [localFormCredits, setLocalFormCredits] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-      if (saved?.formCredits && saved.formCredits > 0) return saved.formCredits
-    } catch {}
-    return 0
-  })
-
-  // Restore submitted state from localStorage (survives reloads)
-  // NOTE: m360_form_submitted is separate from m360_completed (game)
-  const [isSubmitted, setIsSubmitted] = useState(() => {
-    try {
-      const formSubmitted = localStorage.getItem('m360_form_submitted')
-      const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-      if (formSubmitted && saved && saved.name) {
-        return true
-      }
-    } catch {}
-    return false
-  })
+  // Submitted state — from the backend mirror's formComplete flag. THIS is the
+  // gate: once the server says the form is complete, we show the success UI
+  // with credits from the response — never from local counters.
+  const [isSubmitted, setIsSubmitted] = useState(() => !!cachedDoc()?.formComplete)
 
   const [showCreditPopup, setShowCreditPopup] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   const totalSteps = FORM_STEPS.length + 1 // +1 for identity step
+  // Progress bar = steps answered / total. Local (progress cache).
   const progress = Math.min(((currentStep + 1) / totalSteps) * 100, 100)
-  const totalEarned = gameCredits + localFormCredits
+
+  // CREDITS — every displayed value comes straight from the backend doc
+  // (m360_doc). The backend saves gameCredits=300 and formCredits=475 as
+  // static numbers. The frontend does ZERO credit math — it only displays
+  // what the server returns. Before the game is played, gameCredits=0; before
+  // the form is submitted, formCredits=0. The "possible" maxima also come from
+  // the doc (maxGameCredits=300, maxFormCredits=475).
+  const gameCredits = doc?.gameCredits || 0
+  const formCredits = doc?.formCredits || 0
+  const totalCredits = doc?.totalCredits || 0
+  const maxGameCredits = doc?.maxGameCredits || 300
+  const maxFormCredits = doc?.maxFormCredits || 475
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Step-advance flourish — just shows a "+25 credits" popup. No API call, no
+  // credit computation. The actual credit display is driven entirely by the
+  // backend doc via the lbEvents subscription below.
   const triggerCreditAnimation = useCallback(() => {
     setShowCreditPopup(true)
-    addFormCredits(25)
-    setLocalFormCredits((prev) => {
-      const newVal = prev + 25
-      // Persist to localStorage so credits survive page reload
-      try {
-        const saved = JSON.parse(localStorage.getItem('m360_user') || 'null') || {}
-        saved.formCredits = newVal
-        saved.totalCredits = (saved.gameCredits || 0) + newVal
-        localStorage.setItem('m360_user', JSON.stringify(saved))
-      } catch {}
-      return newVal
-    })
     setTimeout(() => setShowCreditPopup(false), 1500)
-  }, [addFormCredits])
+  }, [])
 
   const goToNext = useCallback(() => {
     triggerCreditAnimation()
@@ -438,86 +448,124 @@ export default function FormSection() {
   }
 
   // ============================================
-  // SYNC: When game submits identity (same-page, no refresh), update form state
-  // ============================================
-  useEffect(() => {
-    if (userSubmitted && userName && !isSubmitted) {
-      try {
-        const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-        if (saved) {
-          setIdentityDone(true)
-          setCurrentStep(1)
-          setFormData((prev) => ({
-            ...prev,
-            name: saved.name || prev.name,
-            email: saved.email || prev.email,
-            city: saved.city || prev.city,
-            ageRange: saved.ageRange || prev.ageRange,
-          }))
-        }
-      } catch {}
-    }
-  }, [userSubmitted, userName, isSubmitted])
-
-  // ============================================
-  // SYNC: Form is submitted only if m360_form_submitted is set
-  // (separate from m360_completed which is set by the game)
+  // SYNC: poll m360_doc after the game submits identity on the same page.
+  // When the game-end flow calls submitGame → applyResponse, m360_doc gets
+  // updated. We detect that and skip step 0 so the user doesn't re-enter
+  // identity they just gave the game.
   // ============================================
   useEffect(() => {
     if (isSubmitted) return
-    try {
-      const formDone = localStorage.getItem('m360_form_submitted')
-      const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-      if (formDone && saved?.name) {
+    const fresh = cachedDoc()
+    if (fresh?.email && fresh?.inWaitlist && !identityDone) {
+      setIdentityDone(true)
+      setCurrentStep(1)
+      setFormData((prev) => ({
+        ...prev,
+        name: fresh.name || prev.name,
+        email: fresh.email || prev.email,
+        city: fresh.city || prev.city,
+        ageRange: fresh.ageRange || prev.ageRange,
+      }))
+      setDoc(fresh)
+    }
+    if (fresh?.formComplete && !isSubmitted) {
+      setIsSubmitted(true)
+      setDoc(fresh)
+    }
+  }, [identityDone, isSubmitted])
+
+  // ON EVERY RESPONSE that touches m360_doc (game submit in another component,
+  // waitlist join, form submit from a different tab, etc.) we MUST re-read the
+  // mirror and re-derive our entire display from the new doc. This is the
+  // "after every response, update everything that uses the data" rule. Without
+  // this, the hero credit counter stays stale at the value it held on mount.
+  useEffect(() => {
+    const onLb = () => {
+      const fresh = cachedDoc()
+      if (!fresh) return
+      // Update identity gate + advance step 0 if the game captured identity.
+      if (fresh.email && fresh.inWaitlist && !identityDone) {
+        setIdentityDone(true)
+        setCurrentStep(1)
+        setFormData((prev) => ({
+          ...prev,
+          name: fresh.name || prev.name,
+          email: fresh.email || prev.email,
+          city: fresh.city || prev.city,
+          ageRange: fresh.ageRange || prev.ageRange,
+        }))
+      }
+      // If the server now says the form is complete, jump to success.
+      if (fresh.formComplete && !isSubmitted) {
         setIsSubmitted(true)
       }
-    } catch {}
-  }, [isSubmitted, userSubmitted, userName])
-
-  // Step 0: identity only — save to localStorage + waitlist, NO leaderboard, NO credits
-  const handleIdentitySubmit = useCallback(() => {
-    if (!formData.name.trim() || !formData.email.trim() || !formData.city || !formData.ageRange) return
-
-    // Preserve any gameCredits if the game already ran (edge case: game → form Step 0)
-    let existingGameCredits = 0
-    try {
-      const prev = JSON.parse(localStorage.getItem('m360_user') || 'null')
-      existingGameCredits = prev?.gameCredits || 0
-      // Also check m360_game_credits (saved on game complete before name submission)
-      const gameCreditsOnly = parseInt(localStorage.getItem('m360_game_credits') || '0', 10)
-      if (gameCreditsOnly > existingGameCredits) {
-        existingGameCredits = gameCreditsOnly
-      }
-    } catch {}
-
-    const entry = {
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      city: formData.city,
-      ageRange: formData.ageRange,
-      gameCredits: existingGameCredits,
-      formCredits: 0,
-      source: 'form',
-      submittedAt: new Date().toISOString(),
+      // ALWAYS re-derive the credit display + every flag from the new doc.
+      // The credit numbers (gameCredits, formCredits, totalCredits,
+      // maxGameCredits, maxFormCredits) all live in the doc — so updating
+      // doc here updates every credit display in this component at once.
+      setDoc(fresh)
     }
+    lbEvents.addEventListener('lb', onLb)
+    return () => lbEvents.removeEventListener('lb', onLb)
+  }, [identityDone, isSubmitted])
 
-    // Save identity (same as game ResultsScreen's submitWaitlist)
-    submitWaitlist(entry.name, entry.email)
+  // Step 0: identity only — POST /api/waitlist. Backend stores identity, no
+  // flags/credits. On success, applyResponse writes m360_doc and we advance.
+  const handleIdentitySubmit = useCallback(async () => {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.city || !formData.ageRange) return
+    setSubmitError('')
+    setIsSubmitting(true)
     try {
-      localStorage.setItem('m360_identity_done', 'true')
-      // Save full entry so game can read formCredits later
-      localStorage.setItem('m360_user', JSON.stringify(entry))
-      // Clean up temporary game credits key (now that identity is saved properly)
-      localStorage.removeItem('m360_game_credits')
-    } catch {}
+      const res = await submitWaitlist({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        city: formData.city,
+        ageRange: formData.ageRange,
+      })
+      // applyResponse already wrote m360_doc; refresh our local mirror.
+      refreshDoc()
+      setIdentityDone(true)
 
-    setIdentityDone(true)
-    // Advance to first question with credit animation
-    triggerCreditAnimation()
-    setTimeout(() => {
-      setCurrentStep(1)
-    }, 400)
-  }, [formData, submitWaitlist, triggerCreditAnimation])
+      // If the game was already played but not yet submitted against this
+      // identity (e.g. user played the game first, then filled step-0 here),
+      // auto-submit the game so credits post. The game answers are in the
+      // progress cache (m360_game_progress).
+      const docAfterWaitlist = cachedDoc()
+      if (docAfterWaitlist && !docAfterWaitlist.gameComplete) {
+        const progress = readGameProgress()
+        if (progress.picks && progress.picks.length > 0) {
+          try {
+            const res = await submitGame({
+              email: formData.email.trim(),
+              name: formData.name.trim(),
+              city: formData.city,
+              ageRange: formData.ageRange,
+              answers: progress.picks,
+            })
+            // Update doc directly from response (source of truth) so UI reflects
+            // new game credits immediately. applyResponse already updated
+            // localStorage and dispatched lbEvents.
+            setDoc(res.doc)
+          } catch {
+            // Game submit failed — not critical for the form flow. The user can
+            // still fill the form; they just won't see game credits yet.
+          }
+        }
+      }
+      // Refresh the leaderboard — this user may already have game credits
+      // from another session, and the board should reflect that.
+      fetchLeaderboard(12).catch(() => {})
+      // Step 0 is identity — NOT a form field. No +25 credit animation.
+      // Just advance to the first real question.
+      setTimeout(() => {
+        setCurrentStep(1)
+      }, 200)
+    } catch (err) {
+      setSubmitError(err.message || 'Submission failed. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [formData, submitWaitlist, refreshDoc])
 
   // Compute current step data and conditional visibility
   const showShareCountStep = formData.shareWithFriends === 'Yes'
@@ -551,80 +599,70 @@ export default function FormSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, isConditionalHidden, isSubmitted])
 
-  // Final submit: ALL questions answered → insert/update leaderboard with full credits
+  // Track form progress in localStorage (for refresh recovery only - not used for calculations)
+  useEffect(() => {
+    // Only track progress if we're actively filling out the form (not submitted)
+    if (!isSubmitted && currentStep > 0) {
+      try {
+        localStorage.setItem('m360_form_progress', String(currentStep))
+      } catch (e) {
+        // Ignore storage errors - progress tracking is non-essential
+        console.warn('Failed to save form progress to localStorage:', e)
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      // We don't remove the progress here as it's meant to persist for refresh recovery
+    }
+  }, [currentStep, isSubmitted])
+
+  // Final submit: POST /api/form/submit. Backend validates waitlist membership
+  // + gameComplete, flags formComplete, awards formCredits, recomputes
+  // totalCredits. The response doc is the single source of truth for the
+  // success screen — we do NOT compute or display credits locally.
   const handleFinalSubmit = useCallback(async () => {
     if (!formData.name.trim() || !formData.email.trim()) return
+    setSubmitError('')
     setIsSubmitting(true)
 
-    // Read game credits from: (1) context, (2) m360_user.gameCredits, (3) m360_game_credits (saved on game complete)
-    let effectiveGameCredits = gameCredits
+    // formData payload: each step id → { value, suggestion }.
+    const payloadFormData = Object.fromEntries(
+      FORM_STEPS.map((s) => [
+        s.id,
+        {
+          value: formData[s.id],
+          suggestion: formData[`${s.id}Suggestion`],
+        },
+      ])
+    )
+
     try {
-      const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-      if (saved?.gameCredits && saved.gameCredits > effectiveGameCredits) {
-        effectiveGameCredits = saved.gameCredits
-      }
-      // Also check m360_game_credits (set when game finishes, before user submits name)
-      const gameCreditsOnly = parseInt(localStorage.getItem('m360_game_credits') || '0', 10)
-      if (gameCreditsOnly > effectiveGameCredits) {
-        effectiveGameCredits = gameCreditsOnly
-      }
-    } catch {}
-
-    const totalCredits = effectiveGameCredits + localFormCredits
-
-    // Update saved user with full data + credits
-    const entry = {
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      city: formData.city,
-      ageRange: formData.ageRange,
-      gameCredits: effectiveGameCredits,
-      formCredits: localFormCredits,
-      totalCredits,
-      source: 'form',
-      submittedAt: new Date().toISOString(),
-    }
-    try {
-      localStorage.setItem('m360_user', JSON.stringify(entry))
-    } catch {}
-
-    // Insert or update on leaderboard with FULL credits
-    if (userSubmitted && userName) {
-      triggerLeaderboardUpdate(formData.name.trim(), totalCredits)
-    } else {
-      triggerLeaderboardInsert(formData.name.trim(), totalCredits)
-    }
-
-    // Mark as fully completed — prevents game replay
-    markCompleted()
-    // Mark form specifically as submitted (separate from game completion)
-    try { localStorage.setItem('m360_form_submitted', 'true') } catch {}
-
-    // Submit to Formspree
-    try {
-      await fetch('https://formspree.io/f/FORM_ID_PLACEHOLDER', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          ...entry,
-          formData: Object.fromEntries(
-            FORM_STEPS.map((s) => [
-              s.id,
-              {
-                value: formData[s.id],
-                suggestion: formData[`${s.id}Suggestion`],
-              },
-            ])
-          ),
-        }),
+      const res = await submitForm({
+        email: formData.email.trim(),
+        name: formData.name.trim(),
+        city: formData.city,
+        ageRange: formData.ageRange,
+        formData: payloadFormData,
+        // No formCredits hint. The backend is authoritative — it decides the
+        // real formCredits from the filled fields in formData. We pass nothing;
+        // it computes. The response formCredits is the only value we display.
       })
-    } catch {
-      // Formspree not configured — data saved locally
-    }
 
-    setIsSubmitting(false)
-    setIsSubmitted(true)
-  }, [formData, gameCredits, localFormCredits, userSubmitted, userName, triggerLeaderboardInsert, triggerLeaderboardUpdate, markCompleted])
+      // Update doc directly from response (source of truth) so UI reflects
+      // new form credits and completion status immediately. applyResponse
+      // already updated localStorage and dispatched lbEvents.
+      setDoc(res.doc)
+      setIsSubmitted(true)
+
+      // Refresh the leaderboard cache so the inline board shows the new entry.
+      fetchLeaderboard(12).catch(() => {})
+    } catch (err) {
+      setSubmitError(err.message || 'Submission failed. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [formData, submitForm, refreshDoc])
 
   // Keep ref in sync with latest handleFinalSubmit (for auto-skip effect)
   useEffect(() => {
@@ -727,25 +765,32 @@ export default function FormSection() {
             animate={isInView ? { width: 100 } : {}}
             transition={{ delay: 0.8, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           />
-          {/* Animated credit goal */}
+          {/* Credit summary — ALL values from the backend doc (m360_doc).
+              Before submit: game credits are locked (from the game), form
+              credits show as "pending" until the form is submitted. After
+              submit: all three totals come straight from the backend response. */}
           <motion.div
             className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-m360-gold/10 border border-m360-gold/30"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={isInView ? { opacity: 1, scale: 1 } : {}}
             transition={{ delay: 0.9, duration: 0.5 }}
           >
-            <span className="font-body text-xs text-m360-muted">Total credits:</span>
+            <span className="font-body text-xs text-m360-muted">Credits:</span>
             <motion.span
               className="font-heading text-sm text-m360-gold font-bold"
-              key={totalEarned}
+              key={totalCredits}
               initial={{ scale: 1.3, color: '#EFCF9E' }}
               animate={{ scale: 1, color: '#F3AE1C' }}
               transition={{ duration: 0.4 }}
             >
-              {totalEarned}
+              {totalCredits}
             </motion.span>
             <span className="font-body text-xs text-m360-muted">
-              / {gameCredits + TOTAL_FORM_CREDITS} possible
+              {isSubmitted ? (
+                <>· Game {gameCredits} / Form {formCredits}</>
+              ) : (
+                <>/ {maxGameCredits + maxFormCredits} possible · form credits pending</>
+              )}
             </span>
           </motion.div>
           <div className="mt-4 w-20 h-0.5 bg-m360-gold/40 mx-auto rounded-full" />
@@ -770,7 +815,8 @@ export default function FormSection() {
                 Step {currentStep + 1} of {totalSteps}
               </span>
               <span className="font-heading text-xs text-m360-gold font-semibold">
-                🏆 {totalEarned} credits
+                🏆 {totalCredits} / {maxGameCredits + maxFormCredits}
+                {!isSubmitted && <span className="text-m360-muted font-normal"> pending</span>}
               </span>
             </div>
             <div className="h-2 w-full rounded-full bg-m360-card-alt overflow-hidden">
@@ -826,8 +872,11 @@ export default function FormSection() {
                   key="success"
                   name={formData.name}
                   email={formData.email}
-                  gameCredits={gameCredits}
-                  formCredits={localFormCredits}
+                  // Credits come from the backend response (m360_doc) — the
+                  // single source of truth. Local form progress is NOT displayed
+                  // here; only the server's authoritative totals are.
+                  gameCredits={doc?.gameCredits || 0}
+                  formCredits={doc?.formCredits || 0}
                   onCopy={copyLink}
                   copySuccess={copySuccess}
                 />
@@ -874,14 +923,9 @@ function RequiredFieldsStep({ formData, updateField, onNext }) {
 
   return (
     <div className="space-y-5 py-4">
+      
       <div className="text-center mb-6">
-        <motion.div
-          className="text-4xl mb-3"
-          animate={{ rotate: [0, -5, 5, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', repeatDelay: 3 }}
-        >
-          🏛️
-        </motion.div>
+          <img src="../../../assets/anums-removebg-preview.png" alt="" className="max-w-[80px] h-auto mx-auto mb-2" />
         <h3 className="font-heading text-lg md:text-xl text-m360-cream font-bold">
           Your Name in the Hall of Pharaohs
         </h3>
@@ -1009,9 +1053,11 @@ function QuestionStep({ step, formData, updateField, onNext, onPrev, isLast, isS
     <div className="space-y-5 py-4">
       {/* Step header */}
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border border-m360-gold/20 bg-m360-gold/5 text-m360-gold mb-3">
-          {step.icon}
-        </div>
+        {step.id !== 'logoImpression' && step.id !== 'colorsFeelEgypt' && (
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border border-m360-gold/20 bg-m360-gold/5 text-m360-gold mb-3">
+            {step.icon}
+          </div>
+        )}
         <h3 className="font-heading text-base md:text-lg text-m360-cream font-bold">
           {step.question}
         </h3>
@@ -1050,6 +1096,27 @@ function QuestionStep({ step, formData, updateField, onNext, onPrev, isLast, isS
               className="w-28 h-28 object-cover rounded-full border border-m360-gold/30 bg-m360-card-alt"
             />
           )}
+        </div>
+      )}
+
+      {/* Color palette display for colorsFeelEgypt question */}
+      {step.id === 'colorsFeelEgypt' && (
+        <div className="flex justify-center gap-3 mb-6">
+          <div className="flex flex-col items-center">
+            <div className="w-8 h-8 bg-[#F3AE1C] rounded mb-1"></div>
+            <span className="text-xs text-m360-cream">Gold</span>
+            <span className="text-xs text-m360-muted">#F3AE1C</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="w-8 h-8 bg-[#EFCF9E] rounded mb-1"></div>
+            <span className="text-xs text-m360-cream">Cream</span>
+            <span className="text-xs text-m360-muted">#EFCF9E</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="w-8 h-8 bg-[#0B0B0B] rounded mb-1"></div>
+            <span className="text-xs text-m360-cream">Ebony</span>
+            <span className="text-xs text-m360-muted">#0B0B0B</span>
+          </div>
         </div>
       )}
 
@@ -1227,15 +1294,27 @@ function QuestionStep({ step, formData, updateField, onNext, onPrev, isLast, isS
    ============================================ */
 function SuccessStep({ name, email, gameCredits, formCredits, onCopy, copySuccess }) {
   const total = gameCredits + formCredits
-  // Calculate rank from localStorage leaderboard
-  const rank = (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('m360_user') || 'null')
-      const lb = JSON.parse(localStorage.getItem('m360_leaderboard') || '[]')
-      const idx = lb.findIndex((e) => e.name === (saved?.name || name))
-      return idx >= 0 ? idx + 1 : '—'
-    } catch { return '—' }
-  })()
+  // Calculate rank from the API leaderboard cache (m360_lb). This is the
+  // authoritative board returned by the backend, not a client-side ledger.
+  // We re-read the cache whenever lbEvents fires (form/game submit updated
+  // m360_lb) so the rank updates once the fresh leaderboard arrives.
+  // Match by EMAIL (unique) — not name, which can collide between users.
+  const [rank, setRank] = useState('—')
+  useEffect(() => {
+    const recompute = () => {
+      try {
+        const lb = JSON.parse(localStorage.getItem('m360_lb') || '[]')
+        const meId = email || name
+        const idx = lb.findIndex((e) =>
+          e.email && email ? e.email === email : e.name === name
+        )
+        setRank(idx >= 0 ? idx + 1 : '—')
+      } catch { setRank('—') }
+    }
+    recompute()
+    lbEvents.addEventListener('lb', recompute)
+    return () => lbEvents.removeEventListener('lb', recompute)
+  }, [name, email])
 
   return (
     <motion.div
@@ -1260,8 +1339,13 @@ function SuccessStep({ name, email, gameCredits, formCredits, onCopy, copySucces
         transition={{ type: 'spring', stiffness: 150, delay: 0.2 }}
       >
         <div className="text-5xl md:text-6xl" style={{ filter: 'drop-shadow(0 0 20px rgba(243,174,28,0.5))' }}>
-          👑
-        </div>
+    <img
+      src="/assets/pharaoh.png"
+      alt="Pharaoh"
+      className="h-10 md:h-12"
+      style={{ filter: 'drop-shadow(0 0 20px rgba(243,174,28,0.5))' }}
+    />
+  </div>
         {/* Rotating glow ring */}
         <motion.div
           className="absolute inset-0 -m-3 rounded-full border border-m360-gold/20"
@@ -1375,7 +1459,7 @@ function SuccessStep({ name, email, gameCredits, formCredits, onCopy, copySucces
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
-              ⚡
+            <svg className="h-4 w-4 text-m360-cream" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
             </motion.span>
             <p className="font-heading text-sm text-m360-gold font-bold">
               Early Access Privileges
@@ -1395,7 +1479,7 @@ function SuccessStep({ name, email, gameCredits, formCredits, onCopy, copySucces
         transition={{ delay: 1.3 }}
       >
         <div className="flex items-center justify-center gap-3 p-3 rounded-xl bg-m360-card-alt/50 border border-m360-border/50">
-          <span className="text-xl">🏆</span>
+           <svg className="h-10 w-10 text-m360-cream" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.45 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.45 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2z" /></svg>
           <div className="text-left">
             <p className="font-heading text-sm text-m360-cream font-bold">
               Your name is carved at Rank #{rank} on the pre-launch leaderboard
@@ -1421,7 +1505,25 @@ function SuccessStep({ name, email, gameCredits, formCredits, onCopy, copySucces
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
         >
-          {copySuccess ? '✅ Link Copied!' : '🔗 Summon Others to Compete'}
+          {copySuccess ? (
+
+  <>
+
+    ✅ Link Copied!
+
+  </>
+
+) : (
+
+  <>
+
+    <FiUserPlus className="inline mr-2 text-lg" />
+
+    Summon Others to Compete
+
+  </>
+
+)}
         </motion.button>
         <p className="font-body text-[10px] text-m360-muted/50">
           The more friends you summon, the higher you rise on the leaderboard.

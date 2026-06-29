@@ -162,19 +162,6 @@ export const GAME_QUESTIONS = [
   },
 ]
 
-export const PRESEEDED_LEADERBOARD = [
-  { name: 'A***d M.', city: 'Cairo', credits: 850 },
-  { name: 'S***a K.', city: 'Alexandria', credits: 775 },
-  { name: 'M***l A.', city: 'Giza', credits: 720 },
-  { name: 'N***a H.', city: 'Luxor', credits: 680 },
-  { name: 'Y***n S.', city: 'Aswan', credits: 625 },
-  { name: 'L***a E.', city: 'Cairo', credits: 590 },
-  { name: 'K***l M.', city: 'Port Said', credits: 540 },
-  { name: 'J***s B.', city: 'Suez', credits: 485 },
-  { name: 'R***a F.', city: 'Mansoura', credits: 430 },
-  { name: 'T***s L.', city: 'Tanta', credits: 380 },
-]
-
 export const FORM_SECTIONS = [
   { id: 'governorates', label: 'Governorates Explorer' },
   { id: 'places', label: 'Places & Attractions' },

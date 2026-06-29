@@ -116,7 +116,7 @@ function AutoMorphingText() {
   return (
     <div ref={containerRef} className="relative h-28 md:h-32 flex flex-col items-center justify-center overflow-hidden">
       {/* Main morphing text with 360° beside it */}
-      <div className="flex items-center gap-3 md:gap-4">
+      <div className="flex items-baseline gap-3 md:gap-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -127,7 +127,7 @@ function AutoMorphingText() {
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
             <span
-              className="font-heading text-5xl md:text-6xl lg:text-7xl font-bold"
+              className="font-heading text-5xl md:text-6xl lg:text-7xl font-bold leading-none"
               style={{ color: current.color }}
               dir="auto"
             >
@@ -139,17 +139,10 @@ function AutoMorphingText() {
           </motion.div>
         </AnimatePresence>
 
-        {/* 360° static companion with subtle pulse */}
-        <motion.span
-          className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-m360-cream/70"
-          animate={{
-            opacity: [0.5, 1, 0.5],
-            scale: [0.95, 1.02, 0.95],
-          }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-        >
+        {/* 360° static companion — solid color, no animation */}
+        <span className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-m360-cream">
           360°
-        </motion.span>
+        </span>
       </div>
 
       {/* Progress dots */}
