@@ -688,7 +688,7 @@ export default function FormSection() {
     <section
       id="form"
       ref={sectionRef}
-      className="relative py-20 md:py-32 px-4 md:px-8 overflow-hidden"
+      className="relative py-16 md:py-24 px-4 md:px-8 overflow-hidden"
     >
       <CreditPopup show={showCreditPopup} />
       {isSubmitted && <ConfettiBurst />}
@@ -714,7 +714,7 @@ export default function FormSection() {
 
         {/* Section header */}
         <motion.div
-          className="text-center mb-10 md:mb-14"
+          className="text-center mb-6 md:mb-8"
           initial={{ opacity: 0, y: 40, filter: 'blur(4px)' }}
           animate={isInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
@@ -760,7 +760,7 @@ export default function FormSection() {
           </motion.p>
           {/* Animated divider line */}
           <motion.div
-            className="mt-5 mx-auto rounded-full"
+            className="mt-3 mx-auto rounded-full"
             style={{ height: 1, background: 'linear-gradient(90deg, transparent, #F3AE1C, transparent)' }}
             initial={{ width: 0 }}
             animate={isInView ? { width: 100 } : {}}
@@ -794,7 +794,7 @@ export default function FormSection() {
               )}
             </span>
           </motion.div>
-          <div className="mt-4 w-20 h-0.5 bg-m360-gold/40 mx-auto rounded-full" />
+          <div className="mt-2 w-20 h-0.5 bg-m360-gold/40 mx-auto rounded-full" />
         </motion.div>
 
         {/* Form card */}
@@ -923,10 +923,10 @@ function RequiredFieldsStep({ formData, updateField, onNext }) {
     'w-full px-4 py-3.5 rounded-xl bg-m360-card-alt border border-m360-border text-m360-text font-body text-sm placeholder:text-m360-muted/50 transition-all duration-200 focus:outline-none focus:border-m360-gold focus:shadow-[0_0_0_3px_rgba(243,174,28,0.2)]'
 
   return (
-    <div className="space-y-5 py-4">
-      
-      <div className="text-center mb-6">
-          <LazyImage src="/anums-removebg-preview.webp" alt="" width="80" height="80" className="max-w-[80px] h-auto mx-auto mb-2" style={{ aspectRatio: '1/1' }} />
+    <div className="space-y-4 py-2">
+
+      <div className="text-center mb-3">
+          <img src="/anums-removebg-preview.webp" alt="" width="80" height="80" className="max-w-[80px] h-auto mx-auto mb-1" loading="lazy" decoding="async" style={{ aspectRatio: '1/1' }} />
         <h3 className="font-heading text-lg md:text-xl text-m360-cream font-bold">
           Your Name in the Hall of Pharaohs
         </h3>

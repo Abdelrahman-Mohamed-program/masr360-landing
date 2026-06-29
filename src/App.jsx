@@ -16,7 +16,6 @@ import LoadingScreen from './components/LoadingScreen'
 import PlayNowSection from './components/PlayNowSection'
 import FormSection from './components/FormSection'
 import { ContainerScroll } from "./components/ui/container-scroll-animation"
-import SafeIframe from './components/SafeIframe'
 import { HieroglyphicBg, GoldRadialGlow, FloatingOrbs, ScanlineOverlay } from "./components/ui/ambient-effects"
 import { MorphingText } from "./components/ui/liquid-text"
 
@@ -609,7 +608,12 @@ function WebsitePreviewSection() {
           </div>
         }
       >
-        <SafeIframe src="https://m360travel.com" title="M360 Live Website" />
+        <iframe
+          src="https://m360travel.com"
+          title="M360 Live Website"
+          loading="lazy"
+          className="w-full h-full border-0 rounded-2xl"
+        />
       </ContainerScroll>
       <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-[#0B0B0B] to-transparent pointer-events-none" />
     </section>
