@@ -355,7 +355,7 @@ export default function WhatIsM360() {
 
       {/* Section heading — character-by-character reveal */}
       <motion.div
-        className="text-center mb-8 md:mb-12 relative z-10"
+        className="text-center mb-3 md:mb-4 relative z-10"
         variants={headingVariants}
         initial="hidden"
         animate={isInView ? 'visible' : 'hidden'}

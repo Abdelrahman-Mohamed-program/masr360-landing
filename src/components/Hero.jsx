@@ -177,22 +177,24 @@ function CTAs() {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 1.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     >
-      <motion.button
-        onClick={scrollToForm}
-        className="btn-physical w-full sm:w-auto px-8 py-3.5 rounded-full bg-m360-gold text-m360-bg font-body font-semibold text-base md:text-lg shadow-[0_0_20px_rgba(243,174,28,0.3)] hover:shadow-[0_0_30px_rgba(243,174,28,0.5)] transition-shadow duration-300 cursor-pointer"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.97 }}
-        animate={{
-          boxShadow: [
-            '0 0 20px rgba(243,174,28,0.3)',
-            '0 0 35px rgba(243,174,28,0.5)',
-            '0 0 20px rgba(243,174,28,0.3)',
-          ],
-        }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        Secure My Spot
-      </motion.button>
+      <span className="relative inline-flex">
+        <motion.button
+          onClick={scrollToForm}
+          className="btn-physical w-full sm:w-auto px-8 py-3.5 rounded-full bg-m360-gold text-m360-bg font-body font-semibold text-base md:text-lg shadow-[0_0_20px_rgba(243,174,28,0.3)] hover:shadow-[0_0_30px_rgba(243,174,28,0.5)] transition-shadow duration-300 cursor-pointer"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.97 }}
+          animate={{
+            boxShadow: [
+              '0 0 20px rgba(243,174,28,0.3)',
+              '0 0 35px rgba(243,174,28,0.5)',
+              '0 0 20px rgba(243,174,28,0.3)',
+            ],
+          }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          Secure My Spot
+        </motion.button>
+      </span>
 
       <motion.a
         href={SITE_URL}

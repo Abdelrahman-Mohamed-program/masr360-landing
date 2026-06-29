@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { motion, useMotionTemplate, useScroll, useTransform } from 'framer-motion'
 import { GameProvider, useGame } from './context/GameContext'
 import Hero from './components/Hero'
 import WhatIsM360 from './components/WhatIsM360'
@@ -12,9 +12,14 @@ import { EgyptianBorder, SectionDivider } from './components/EgyptianOrnaments'
 import GoldDust from './components/GoldDust'
 import FloatingNavbar from './components/FloatingNavbar'
 import LoadingScreen from './components/LoadingScreen'
-import WelcomeBanner from './components/WelcomeBanner'
+// WelcomeBanner merged into FloatingNavbar center slot
 import PlayNowSection from './components/PlayNowSection'
 import FormSection from './components/FormSection'
+import { ContainerScroll } from "./components/ui/container-scroll-animation"
+import { HieroglyphicBg, GoldRadialGlow, FloatingOrbs, ScanlineOverlay } from "./components/ui/ambient-effects"
+import { MorphingText } from "./components/ui/liquid-text"
+
+const DISCOVER_WORDS = ["Egypt", "Deserts", "Beaches", "Cruises", "Pyramids"]
 
 function ReadyToExploreCTA() {
   return (
@@ -545,6 +550,82 @@ function FooterSection() {
   )
 }
 
+function WebsitePreviewSection() {
+  return (
+    <section className="bg-[#070503] relative overflow-hidden">
+      <HieroglyphicBg opacity={0.025} />
+      <GoldRadialGlow position="top" />
+      <FloatingOrbs />
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#F3AE1C]/30 to-transparent" />
+      <ContainerScroll
+        titleComponent={
+          <div className="relative z-10">
+            {/* Discover ___ lead-in — tight, sits directly above LIVE RIGHT NOW eyebrow */}
+            <div
+              className="text-xl md:text-2xl text-m360-cream leading-none inline-flex items-center justify-center -translate-x-[6px]"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Discover
+              {/* Width anchored on "Egypt" (main/first word). Inner text is
+                  left-aligned so Egypt stays put, longer words extend right. */}
+              <MorphingText
+                texts={DISCOVER_WORDS}
+                className="font-heading text-m360-gold text-xl md:text-2xl text-left w-[68px] md:w-[92px] h-7 md:h-9 ml-1 translate-y-[3px]"
+              />
+            </div>
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+              className="text-[#F3AE1C] text-xs uppercase tracking-[0.3em] mt-3 mb-4"
+            >
+              Live Right Now
+            </motion.p>
+            <motion.h2
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.15 }}
+              style={{
+                fontFamily: "'Cinzel', serif",
+                fontSize: "clamp(1.8rem, 4vw, 3.2rem)",
+                fontWeight: 700,
+                color: "#EFCF9E",
+                lineHeight: 1.2,
+              }}
+              className="mb-4"
+            >
+              The website is already live.
+              <br />
+              <span style={{ color: "#F3AE1C" }}>Explore it before launch.</span>
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+              className="text-[#EFCF9E]/40 text-sm max-w-md mx-auto"
+            >
+              Every page is live and building in real time.
+              You are watching M360 come to life.
+            </motion.p>
+          </div>
+        }
+      >
+        <iframe
+          src="https://m360travel.com"
+          className="w-full h-full rounded-xl border-0"
+          title="M360 Live Website"
+          loading="lazy"
+        />
+      </ContainerScroll>
+      <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-[#0B0B0B] to-transparent pointer-events-none" />
+    </section>
+  )
+}
+
 function AppContent() {
   const [loaded, setLoaded] = useState(false)
   const { userName } = useGame()
@@ -572,7 +653,7 @@ function AppContent() {
       <ScrollProgressBar />
       <EgyptianBorder />
       <BackToTop />
-      <WelcomeBanner />
+
 
       <main id="main-content" className="relative">
         <Hero loaded={loaded} />
@@ -590,6 +671,9 @@ function AppContent() {
         <PlayNowSection />
         <SectionDivider />
         <BuildingSection />
+        <SectionDivider />
+        <WebsitePreviewSection />
+        <SectionDivider />
         <ReadyToExploreCTA />
         <FooterSection />
       </main>

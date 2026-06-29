@@ -85,7 +85,7 @@ export default function Leaderboard({ highlightEntry }) {
               return (
                 <motion.div
                   key={`${entry.name}-${entry.credits}-${i}`}
-                  className={`flex items-center gap-2.5 px-4 py-2 ${
+                  className={`relative flex items-center gap-2.5 px-4 py-2 ${
                     isHighlight ? 'bg-m360-gold/10' : ''
                   }`}
                   initial={{ opacity: 0, x: -20 }}

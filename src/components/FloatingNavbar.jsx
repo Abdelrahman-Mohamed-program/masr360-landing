@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGame } from '../context/GameContext'
+import PharaohIcon from '../components/PharaohIcon'
 
 export default function FloatingNavbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -33,15 +34,23 @@ export default function FloatingNavbar() {
         >
           <div className="max-w-6xl mx-auto px-4 md:px-8 py-3 flex items-center gap-4">
             {/* Logo */}
-            <a href="#hero" className="font-heading text-lg md:text-xl text-m360-gold font-bold tracking-wider">
+            <a href="#hero" className="font-heading text-lg md:text-xl text-m360-gold font-bold tracking-wider shrink-0">
               M360
             </a>
 
-            {/* User name badge */}
+            {/* Spacer pushes the center badge + CTA apart */}
+            <div className="flex-1" />
+
+            {/* Center: welcome badge (replaces the floating WelcomeBanner) */}
             {userName && (
-              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-m360-gold/10 border border-m360-gold/30">
-                <span className="text-xs">👑</span>
-                <span className="font-body text-xs text-m360-cream font-medium">{userName}</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-m360-card/95 backdrop-blur-md border border-m360-gold/40 shadow-[0_0_20px_rgba(243,174,28,0.15)] shrink-0">
+                <PharaohIcon />
+                <span className="font-heading text-xs md:text-sm text-m360-gold font-semibold hidden sm:inline">
+                  Welcome on Board, Pharaoh!
+                </span>
+                <span className="font-body text-xs text-m360-cream/80 hidden sm:inline">
+                  — {userName}
+                </span>
               </div>
             )}
 
