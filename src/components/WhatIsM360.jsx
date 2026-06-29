@@ -174,23 +174,23 @@ function AnimatedLogoImage() {
       {/* Outer rotating ring */}
       <motion.div
         className="absolute inset-0 rounded-full border border-m360-gold/20"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+        animate={isInView ? { rotate: 360 } : { rotate: 0 }}
+        transition={{ duration: 30, repeat: isInView ? Infinity : 0, ease: 'linear' }}
       />
       <motion.div
         className="absolute inset-4 rounded-full border border-m360-cream/10"
-        animate={{ rotate: -360 }}
-        transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
+        animate={isInView ? { rotate: -360 } : { rotate: 0 }}
+        transition={{ duration: 24, repeat: isInView ? Infinity : 0, ease: 'linear' }}
       />
 
       {/* Glow pulse behind image */}
       <motion.div
         className="absolute inset-[15%] rounded-full bg-m360-gold/10 blur-2xl"
-        animate={{
+        animate={isInView ? {
           scale: [1, 1.15, 1],
           opacity: [0.3, 0.6, 0.3],
-        }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        } : { scale: 1, opacity: 0.3 }}
+        transition={{ duration: 3, repeat: isInView ? Infinity : 0, ease: 'easeInOut' }}
       />
 
       {/* The image */}
@@ -211,8 +211,8 @@ function AnimatedLogoImage() {
         {/* Shimmer overlay */}
         <motion.div
           className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent"
-          animate={{ x: ['-100%', '200%'] }}
-          transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+          animate={isInView ? { x: ['-100%', '200%'] } : { x: '-100%' }}
+          transition={{ duration: 2.5, repeat: isInView ? Infinity : 0, repeatDelay: 3, ease: 'easeInOut' }}
         />
       </motion.div>
 
@@ -235,11 +235,11 @@ function AnimatedLogoImage() {
       >
         <motion.div
           className="w-2 h-2 rounded-full bg-m360-gold"
-          animate={{
+          animate={isInView ? {
             y: [-4, 4, -4],
             boxShadow: ['0 0 0 rgba(243,174,28,0)', '0 0 12px rgba(243,174,28,0.6)', '0 0 0 rgba(243,174,28,0)'],
-          }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          } : { y: 0 }}
+          transition={{ duration: 2, repeat: isInView ? Infinity : 0, ease: 'easeInOut' }}
         />
       </motion.div>
       <motion.div
@@ -250,11 +250,11 @@ function AnimatedLogoImage() {
       >
         <motion.div
           className="w-1.5 h-1.5 rounded-full bg-m360-cream/60"
-          animate={{
+          animate={isInView ? {
             y: [4, -4, 4],
             opacity: [0.4, 1, 0.4],
-          }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          } : { y: 0, opacity: 0.4 }}
+          transition={{ duration: 2.5, repeat: isInView ? Infinity : 0, ease: 'easeInOut' }}
         />
       </motion.div>
     </div>

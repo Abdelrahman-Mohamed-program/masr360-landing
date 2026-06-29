@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion'
+import { motion, useInView, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion'
 import { SITE_URL } from '../config'
 
 const WORDS = ['Egypt.', 'Every', 'corner.', 'One', 'platform.']
@@ -37,17 +37,17 @@ const wordVariants = {
   },
 }
 
-function Particles() {
+function Particles({ active }) {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
       {PARTICLES.map((p) => (
-        <Particle key={p.id} {...p} />
+        <Particle key={p.id} {...p} active={active} />
       ))}
     </div>
   )
 }
 
-function Particle({ left, top, size, duration, delay, driftX, driftY }) {
+function Particle({ left, top, size, duration, delay, driftX, driftY, active }) {
   const x = useMotionValue(0)
   const y = useMotionValue(0)
 
@@ -68,14 +68,14 @@ function Particle({ left, top, size, duration, delay, driftX, driftY }) {
         x: translateX,
         y: translateY,
       }}
-      animate={{
+      animate={active ? {
         x: [-driftX, driftX, -driftX],
         y: [-driftY, driftY, -driftY],
-      }}
+      } : { x: 0, y: 0 }}
       transition={{
         duration,
         delay,
-        repeat: Infinity,
+        repeat: active ? Infinity : 0,
         ease: 'easeInOut',
       }}
     />
@@ -210,7 +210,7 @@ function CTAs() {
   )
 }
 
-function HeroContent() {
+function HeroContent({ active }) {
   const ref = useRef(null)
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -227,7 +227,7 @@ function HeroContent() {
       style={{ y, opacity, scale }}
       className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20"
     >
-      <Particles />
+      <Particles active={active} />
       <BigM360 />
       <Headline />
       <Subheadline />
@@ -335,6 +335,10 @@ function ParallaxPhoto({ ref }) {
 
 export default function Hero({ loaded = true }) {
   const [ready, setReady] = useState(false)
+  // Gate the 18 infinite-loop particle animations behind visibility so the
+  // GPU isn't compositing 18 invisible animations once we scroll past.
+  const sectionRef = useRef(null)
+  const isInView = useInView(sectionRef, { margin: '-150px' })
 
   useEffect(() => {
     if (loaded) {
@@ -346,13 +350,14 @@ export default function Hero({ loaded = true }) {
   return (
     <section
       id="hero"
+      ref={sectionRef}
       className="relative min-h-screen overflow-hidden bg-m360-bg"
     >
       <HeroBackground />
       {ready && (
         <>
           <Badge />
-          <HeroContent />
+          <HeroContent active={isInView} />
           <PyramidSilhouettes />
           <ScrollHint />
         </>
