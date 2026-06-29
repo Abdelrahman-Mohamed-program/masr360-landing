@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 
 export function HieroglyphicPattern({ className = '' }) {
@@ -100,14 +100,14 @@ export function EgyptianBorder({ className = '' }) {
 }
 
 export function FloatingDots({ count = 6, className = '' }) {
-  const dots = Array.from({ length: count }, (_, i) => ({
+  const dots = useMemo(() => Array.from({ length: count }, (_, i) => ({
     id: i,
     x: `${15 + (i * 73) % 70}%`,
     y: `${10 + (i * 41) % 80}%`,
     size: 2 + (i % 3),
     duration: 4 + (i % 4) * 2,
     delay: i * 0.5,
-  }))
+  })), [count])
 
   return (
     <div className={`absolute inset-0 pointer-events-none overflow-hidden ${className}`} aria-hidden="true">

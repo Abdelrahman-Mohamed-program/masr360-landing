@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useMemo, useState, useCallback } from 'react'
 
 const GameContext = createContext(null)
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useId, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 const morphTime = 1.5;
@@ -78,10 +78,10 @@ const Texts = ({ texts }) => {
   );
 };
 
-const SvgFilters = () => (
-  <svg id="filters" className="hidden" preserveAspectRatio="xMidYMid slice">
+const SvgFilters = ({ id }) => (
+  <svg id={`filters-${id}`} className="hidden" preserveAspectRatio="xMidYMid slice">
     <defs>
-      <filter id="threshold">
+      <filter id={`threshold-${id}`}>
         <feColorMatrix
           in="SourceGraphic"
           type="matrix"
@@ -95,16 +95,19 @@ const SvgFilters = () => (
   </svg>
 );
 
-const MorphingText = ({ texts, className }) => (
-  <div
-    className={cn(
-      "relative w-full text-left font-bold leading-none",
-      className,
-    )}
-  >
-    <Texts texts={texts} />
-    <SvgFilters />
-  </div>
-);
+const MorphingText = ({ texts, className }) => {
+  const id = useId();
+  return (
+    <div
+      className={cn(
+        "relative w-full text-left font-bold leading-none",
+        className,
+      )}
+    >
+      <Texts texts={texts} />
+      <SvgFilters id={id} />
+    </div>
+  );
+};
 
 export { MorphingText };

@@ -47,6 +47,8 @@ export default function FloatingNavbar() {
               <img
                 src="/main-logo.webp"
                 alt="M360"
+                width="36"
+                height="36"
                 className="h-9 w-auto"
               />
             </a>
