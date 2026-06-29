@@ -925,7 +925,7 @@ function RequiredFieldsStep({ formData, updateField, onNext }) {
     <div className="space-y-5 py-4">
       
       <div className="text-center mb-6">
-          <img src="../../../assets/anums-removebg-preview.png" alt="" className="max-w-[80px] h-auto mx-auto mb-2" />
+          <img src="/anums-removebg-preview.png" alt="" className="max-w-[80px] h-auto mx-auto mb-2" />
         <h3 className="font-heading text-lg md:text-xl text-m360-cream font-bold">
           Your Name in the Hall of Pharaohs
         </h3>
@@ -1340,7 +1340,7 @@ function SuccessStep({ name, email, gameCredits, formCredits, onCopy, copySucces
       >
         <div className="text-5xl md:text-6xl" style={{ filter: 'drop-shadow(0 0 20px rgba(243,174,28,0.5))' }}>
     <img
-      src="/assets/pharaoh.png"
+      src="/pharaoh.png"
       alt="Pharaoh"
       className="h-10 md:h-12"
       style={{ filter: 'drop-shadow(0 0 20px rgba(243,174,28,0.5))' }}

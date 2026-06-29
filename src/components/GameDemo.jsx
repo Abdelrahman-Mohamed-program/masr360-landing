@@ -1036,7 +1036,7 @@ function ResultsScreen({ credits, answers, onHighlight }) {
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
             >
-         <img src="../../../assets/svg.png" alt="" className="max-w-[80px] h-auto mx-auto" />
+         <img src="/svg.png" alt="" className="max-w-[80px] h-auto mx-auto" />
 
             </motion.div>
             <h4 className="font-heading text-lg md:text-xl text-m360-gold font-bold">
