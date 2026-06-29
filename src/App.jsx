@@ -611,7 +611,7 @@ function WebsitePreviewSection() {
         <iframe
           src="https://m360travel.com"
           title="M360 Live Website"
-          loading="lazy"
+          fetchpriority="high"
           className="w-full h-full border-0 rounded-2xl"
         />
       </ContainerScroll>
