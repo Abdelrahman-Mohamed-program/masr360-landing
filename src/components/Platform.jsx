@@ -100,7 +100,9 @@ const CARDS = [
 
 function PlatformCard({ card, index }) {
   const cardRef = useRef(null)
-  const isInView = useInView(cardRef, { once: true, margin: '-50px' })
+  // Generous negative margin so cards just off-screen (the peeking next card
+  // on mobile) are counted as "in view" and animate in together on first paint.
+  const isInView = useInView(cardRef, { once: true, margin: '-120px' })
 
   const direction = index % 2 === 0 ? -60 : 60
 
@@ -108,12 +110,12 @@ function PlatformCard({ card, index }) {
     <motion.article
       ref={cardRef}
       aria-labelledby={`platform-card-${index}-title`}
-      className="relative flex-shrink-0 w-[85vw] sm:w-[380px] md:w-[420px] rounded-2xl overflow-hidden bg-m360-card border border-m360-border group"
+      className="relative flex-shrink-0 w-[72vw] sm:w-[380px] md:w-[420px] rounded-2xl overflow-hidden bg-m360-card border border-m360-border group"
       initial={{ opacity: 0, x: direction, scale: 0.92, filter: 'blur(8px)' }}
       animate={isInView ? { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' } : {}}
       transition={{
         duration: 0.8,
-        delay: index * 0.12,
+        delay: index * 0.1,
         ease: [0.22, 1, 0.36, 1],
       }}
       whileHover={{ y: -6, transition: { duration: 0.25 } }}
@@ -123,10 +125,11 @@ function PlatformCard({ card, index }) {
         className="absolute inset-0 rounded-2xl border-2 border-m360-gold/0 pointer-events-none z-20"
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: [0, 0.6, 0], borderColor: ['rgba(243,174,28,0)', 'rgba(243,174,28,0.4)', 'rgba(243,174,28,0)'] } : {}}
-        transition={{ duration: 1.2, delay: index * 0.12, ease: 'easeOut' }}
+        transition={{ duration: 1.2, delay: index * 0.1, ease: 'easeOut' }}
       />
-      {/* Image area */}
-      <div className="relative h-48 md:h-52 overflow-hidden">
+      {/* Image area — aspect-ratio drives height so the image fills fully
+          with no black band below it. */}
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: '420/208' }}>
         {/* Gradient placeholder */}
         <div className={`absolute inset-0 bg-gradient-to-br ${card.accentColor}`} />
 
