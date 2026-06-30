@@ -601,9 +601,12 @@ function WebsitePreviewSection() {
                 className="font-heading text-m360-gold text-xl md:text-2xl text-left w-[68px] md:w-[92px] h-7 md:h-9 ml-1 translate-y-[3px]"
               />
             </div>
+            {/* Desktop: animated reveal. Mobile: static — the morphing text
+                already carries the section, and these headings get covered by
+                the iframe before the reveal would fire anyway. */}
             <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              initial={isMobile ? false : { opacity: 0, y: 16 }}
+              animate={isMobile ? { opacity: 1, y: 0 } : (isInView ? { opacity: 1, y: 0 } : {})}
               transition={{ duration: 0.6 }}
               style={{ fontFamily: "'Poppins', sans-serif" }}
               className="text-[#F3AE1C] text-xs uppercase tracking-[0.3em] mt-3 mb-4"
@@ -611,8 +614,8 @@ function WebsitePreviewSection() {
               Live Right Now
             </motion.p>
             <motion.h2
-              initial={{ opacity: 0, y: 24 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              initial={isMobile ? false : { opacity: 0, y: 24 }}
+              animate={isMobile ? { opacity: 1, y: 0 } : (isInView ? { opacity: 1, y: 0 } : {})}
               transition={{ delay: 0.15, duration: 0.7 }}
               style={{
                 fontFamily: "'Cinzel', serif",
@@ -628,8 +631,8 @@ function WebsitePreviewSection() {
               <span style={{ color: "#F3AE1C" }}>Explore it before launch.</span>
             </motion.h2>
             <motion.p
-              initial={{ opacity: 0 }}
-              animate={isInView ? { opacity: 1 } : {}}
+              initial={isMobile ? false : { opacity: 0 }}
+              animate={isMobile ? { opacity: 1 } : (isInView ? { opacity: 1 } : {})}
               transition={{ delay: 0.3, duration: 0.6 }}
               style={{ fontFamily: "'Poppins', sans-serif" }}
               className="text-[#EFCF9E]/40 text-sm max-w-md mx-auto"
