@@ -475,7 +475,7 @@ function FooterSection() {
             <p style={{ fontFamily: "'Poppins', sans-serif" }} className="text-m360-gold/50 text-[10px] uppercase tracking-[0.25em] mb-5">Connect</p>
             <div className="space-y-3">
               <a href="https://m360travel.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-white/70 hover:text-white transition-colors duration-300 text-xs group" style={{ fontFamily: "'Poppins', sans-serif" }}>
-                m360travel.com
+                Website
               </a>
               {socials.map((s, i) => (
                 <motion.a
@@ -505,9 +505,6 @@ function FooterSection() {
             transition={{ delay: 0.3, duration: 0.5 }}
           >
             <p style={{ fontFamily: "'Poppins', sans-serif" }} className="text-m360-gold/50 text-[10px] uppercase tracking-[0.25em] mb-5">Contact</p>
-            <a href="mailto:team@m360travel.com" className="group text-white/70 hover:text-white text-xs transition-colors duration-300 mb-3" style={{ fontFamily: "'Poppins', sans-serif" }}>
-              team@m360travel.com
-            </a>
             <div className="text-white/70 text-xs mt-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
               Cairo, Egypt
             </div>

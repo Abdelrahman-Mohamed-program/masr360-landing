@@ -21,7 +21,7 @@ export const ContainerScroll = ({ titleComponent, children }: {
   const scale = useTransform(scrollYProgress, [0, 0.55, 1], [...scaleDimensions(), scaleDimensions()[1]]);
   const translate = useTransform(scrollYProgress, [0, 0.55, 1], [0, -100, -100]);
   // Mobile: drop the heavy multi-layer box-shadow that's recalculated every
-  // scroll frame — keeps the 3D unfold smooth on low-end GPUs.
+  // scroll frame — keeps things smooth on low-end GPUs.
   // Desktop keeps the full shadow stack unchanged.
   const cardShadow = isMobile
     ? "0 9px 20px #0000004a"
@@ -32,18 +32,31 @@ export const ContainerScroll = ({ titleComponent, children }: {
         <motion.div style={{ translateY: translate }} className="max-w-5xl mx-auto text-center mb-8">
           {titleComponent}
         </motion.div>
-        <motion.div
-          style={{
-            rotateX: rotate,
-            scale,
-            boxShadow: cardShadow,
-          }}
-          className="max-w-5xl -mt-12 mx-auto h-[30rem] md:h-[40rem] w-full border border-[#F3AE1C]/20 p-2 md:p-4 bg-[#0C0905] rounded-[24px] shadow-2xl will-change-transform"
-        >
-          <div className="h-full w-full overflow-hidden rounded-2xl bg-[#080604]">
-            {children}
+        {/* Mobile: flat card, no 3D rotateX/scale — eliminates the GPU cost
+            that caused the lag. Desktop keeps the full 3D unfold. */}
+        {isMobile ? (
+          <div
+            className="max-w-5xl -mt-12 mx-auto h-[30rem] w-full border border-[#F3AE1C]/20 p-2 bg-[#0C0905] rounded-[24px] shadow-2xl"
+            style={{ boxShadow: cardShadow }}
+          >
+            <div className="h-full w-full overflow-hidden rounded-2xl bg-[#080604]">
+              {children}
+            </div>
           </div>
-        </motion.div>
+        ) : (
+          <motion.div
+            style={{
+              rotateX: rotate,
+              scale,
+              boxShadow: cardShadow,
+            }}
+            className="max-w-5xl -mt-12 mx-auto h-[40rem] w-full border border-[#F3AE1C]/20 p-4 bg-[#0C0905] rounded-[24px] shadow-2xl will-change-transform"
+          >
+            <div className="h-full w-full overflow-hidden rounded-2xl bg-[#080604]">
+              {children}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
