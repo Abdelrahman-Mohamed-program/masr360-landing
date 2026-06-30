@@ -239,9 +239,23 @@ function BuildingSection() {
                     ) : (
                       <span className={i === doneCount ? "" : "opacity-50"}>{item.icon}</span>
                     )}
-                    {/* Active spinner for the "in progress" item */}
+                    {/* Active spinner for the "in progress" item.
+                        Desktop: original border-trick spinner (unchanged).
+                        Mobile: conic-gradient spinner — GPU-composited, no per-frame repaint. */}
                     {i === doneCount && !item.done && (
-                      <motion.div className="absolute inset-0 rounded-full border-2 border-transparent" style={{ borderTopColor: "#F3AE1C", borderRightColor: "rgba(243,174,28,0.2)" }} animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }} />
+                      <>
+                        <motion.div className="absolute inset-0 rounded-full border-2 border-transparent max-md:hidden" style={{ borderTopColor: "#F3AE1C", borderRightColor: "rgba(243,174,28,0.2)" }} animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }} />
+                        <motion.div
+                          className="absolute inset-0 rounded-full md:hidden will-change-transform"
+                          style={{
+                            background: 'conic-gradient(from 0deg, #F3AE1C 0deg, rgba(243,174,28,0.15) 90deg, transparent 180deg, transparent 360deg)',
+                            mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px))',
+                            WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px))',
+                          }}
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                        />
+                      </>
                     )}
                   </div>
 

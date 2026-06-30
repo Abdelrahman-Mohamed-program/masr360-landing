@@ -20,6 +20,12 @@ export const ContainerScroll = ({ titleComponent, children }: {
   const rotate = useTransform(scrollYProgress, [0, 0.55, 1], [20, 0, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.55, 1], [...scaleDimensions(), scaleDimensions()[1]]);
   const translate = useTransform(scrollYProgress, [0, 0.55, 1], [0, -100, -100]);
+  // Mobile: drop the heavy multi-layer box-shadow that's recalculated every
+  // scroll frame — keeps the 3D unfold smooth on low-end GPUs.
+  // Desktop keeps the full shadow stack unchanged.
+  const cardShadow = isMobile
+    ? "0 9px 20px #0000004a"
+    : "0 0 80px rgba(243,174,28,0.08), 0 9px 20px #0000004a, 0 37px 37px #00000042, 0 84px 50px #00000026";
   return (
     <div className="h-[60rem] md:h-[80rem] flex items-center justify-center relative p-2 md:p-20" ref={containerRef}>
       <div className="py-10 md:py-40 w-full relative" style={{ perspective: "1000px" }}>
@@ -30,9 +36,9 @@ export const ContainerScroll = ({ titleComponent, children }: {
           style={{
             rotateX: rotate,
             scale,
-            boxShadow: "0 0 80px rgba(243,174,28,0.08), 0 9px 20px #0000004a, 0 37px 37px #00000042, 0 84px 50px #00000026",
+            boxShadow: cardShadow,
           }}
-          className="max-w-5xl -mt-12 mx-auto h-[30rem] md:h-[40rem] w-full border border-[#F3AE1C]/20 p-2 md:p-4 bg-[#0C0905] rounded-[24px] shadow-2xl"
+          className="max-w-5xl -mt-12 mx-auto h-[30rem] md:h-[40rem] w-full border border-[#F3AE1C]/20 p-2 md:p-4 bg-[#0C0905] rounded-[24px] shadow-2xl will-change-transform"
         >
           <div className="h-full w-full overflow-hidden rounded-2xl bg-[#080604]">
             {children}
