@@ -98,17 +98,11 @@ const CARDS = [
   },
 ]
 
-function PlatformCard({ card, index }) {
-  const cardRef = useRef(null)
-  // Generous negative margin so cards just off-screen (the peeking next card
-  // on mobile) are counted as "in view" and animate in together on first paint.
-  const isInView = useInView(cardRef, { once: true, margin: '-120px' })
-
+function PlatformCard({ card, index, isInView }) {
   const direction = index % 2 === 0 ? -60 : 60
 
   return (
     <motion.article
-      ref={cardRef}
       aria-labelledby={`platform-card-${index}-title`}
       className="relative flex-shrink-0 w-[72vw] sm:w-[380px] md:w-[420px] rounded-2xl overflow-hidden bg-m360-card border border-m360-border group"
       initial={{ opacity: 0, x: direction, scale: 0.92, filter: 'blur(8px)' }}
@@ -227,7 +221,7 @@ function PlatformCard({ card, index }) {
   )
 }
 
-function CardCarousel() {
+function CardCarousel({ isInView }) {
   const containerRef = useRef(null)
   const [scrollProgress, setScrollProgress] = useState(0)
 
@@ -255,7 +249,7 @@ function CardCarousel() {
       >
         {CARDS.map((card, i) => (
           <div key={card.id} className="snap-start">
-            <PlatformCard card={card} index={i} />
+            <PlatformCard card={card} index={i} isInView={isInView} />
           </div>
         ))}
       </div>
@@ -331,7 +325,7 @@ export default function Platform() {
       </motion.div>
 
       {/* Independent scrollable card carousel */}
-      <CardCarousel />
+      <CardCarousel isInView={isInView} />
     </section>
   )
 }
