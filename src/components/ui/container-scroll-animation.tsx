@@ -36,7 +36,7 @@ export const ContainerScroll = ({ titleComponent, children }: {
             that caused the lag. Desktop keeps the full 3D unfold. */}
         {isMobile ? (
           <div
-            className="max-w-5xl -mt-12 mx-auto h-[30rem] w-full border border-[#F3AE1C]/20 p-2 bg-[#0C0905] rounded-[24px] shadow-2xl"
+            className="max-w-5xl mt-6 mx-auto h-[30rem] w-full border border-[#F3AE1C]/20 p-2 bg-[#0C0905] rounded-[24px] shadow-2xl"
             style={{ boxShadow: cardShadow }}
           >
             <div className="h-full w-full overflow-hidden rounded-2xl bg-[#080604]">
