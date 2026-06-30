@@ -59,7 +59,19 @@ function ReadyToExploreCTA() {
   )
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check, { passive: true })
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return isMobile
+}
+
 function BuildingSection() {
+  const isMobile = useIsMobile()
   const stages = [
     {
       label: "Governorates of Egypt",
@@ -166,7 +178,7 @@ function BuildingSection() {
         <motion.div initial={{ opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#F3AE1C]/20 bg-[#F3AE1C]/5 mb-6">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F3AE1C] opacity-60" />
+              {!isMobile && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F3AE1C] opacity-60" />}
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F3AE1C]" />
             </span>
             <span style={{ fontFamily: "'Poppins', sans-serif" }} className="text-[#F3AE1C] text-[11px] uppercase tracking-[0.2em] font-medium">Building in the Open</span>
@@ -230,7 +242,7 @@ function BuildingSection() {
                 <div className={`flex items-center gap-4 md:gap-6 rounded-xl px-4 py-4 md:px-5 md:py-5 transition-all duration-300 group relative ${item.done ? "bg-[#F3AE1C]/[0.04] border border-[#F3AE1C]/10 hover:border-[#F3AE1C]/25" : "bg-white/[0.015] border border-white/[0.04] hover:border-white/10"}`}>
                   {/* Node */}
                   <div className={`relative z-10 w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 ${item.done ? "bg-[#F3AE1C]/10 text-[#F3AE1C]" : i === doneCount ? "bg-amber-500/10 text-amber-400" : "bg-white/[0.03] text-white/20"}`}
-                    style={item.done ? { boxShadow: "0 0 20px rgba(243,174,28,0.15)" } : i === doneCount ? { boxShadow: "0 0 20px rgba(247,191,70,0.12)" } : {}}
+                    style={item.done ? { boxShadow: isMobile ? "none" : "0 0 20px rgba(243,174,28,0.15)" } : i === doneCount ? { boxShadow: isMobile ? "none" : "0 0 20px rgba(247,191,70,0.12)" } : {}}
                   >
                     {item.done ? (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -278,7 +290,7 @@ function BuildingSection() {
                     {item.done && item.live ? (
                       <a href={item.href} target="_blank" rel="noopener noreferrer" className="group/link inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all duration-300 bg-[#22C55E]/[0.08] text-emerald-400 border border-emerald-500/15 hover:bg-[#22C55E]/15 hover:border-emerald-500/30" style={{ fontFamily: "'Poppins', sans-serif" }}>
                       <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
+                        {!isMobile && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />}
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
                       </span>
                       Live
@@ -305,7 +317,7 @@ function BuildingSection() {
             <p style={{ fontFamily: "'Poppins', sans-serif" }} className="text-[#EFCF9E]/40 text-xs">Want to see what's coming next?</p>
             <a href="https://m360travel.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 hover:gap-3" style={{ fontFamily: "'Poppins', sans-serif", background: "linear-gradient(135deg, #F3AE1C 0%, #EFCF9E 100%)", color: "#0B0B0B" }}>
               Visit the live site
-              <motion.span animate={{ x: [0, 3, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>→</motion.span>
+              {isMobile ? <span>→</span> : <motion.span animate={{ x: [0, 3, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>→</motion.span>}
             </a>
           </div>
         </motion.div>
