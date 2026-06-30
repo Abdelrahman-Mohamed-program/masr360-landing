@@ -22,6 +22,7 @@ import { MorphingText } from "./components/ui/liquid-text"
 const DISCOVER_WORDS = ["Egypt", "Deserts", "Beaches", "Cruises", "Pyramids"]
 
 function ReadyToExploreCTA() {
+  const isMobile = useIsMobile()
   return (
     <section id="footer" className="text-center px-4 md:px-8 py-24 md:py-32 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 50% 100%, rgba(243,174,28,0.06) 0%, transparent 70%)" }} aria-hidden="true" />
@@ -43,13 +44,13 @@ function ReadyToExploreCTA() {
           style={{ fontFamily: "'Cinzel', serif", background: "linear-gradient(135deg, #F3AE1C 0%, #EFCF9E 100%)", color: "#0B0B0B", letterSpacing: "0.05em" }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
-          animate={{
+          animate={!isMobile ? {
             boxShadow: [
               '0 0 24px rgba(243,174,28,0.35)',
               '0 0 56px rgba(243,174,28,0.7)',
               '0 0 24px rgba(243,174,28,0.35)',
             ],
-          }}
+          } : {}}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         >
           Secure My Spot →
@@ -327,6 +328,7 @@ function BuildingSection() {
 }
 
 function FooterSection() {
+  const isMobile = useIsMobile()
   const socials = [
     { label: "Instagram", href: "https://www.instagram.com/m360.travel" },
     { label: "TikTok", href: "https://www.tiktok.com/@m360.travel" },
@@ -342,14 +344,14 @@ function FooterSection() {
       {/* Animated top separator — unique double-line with glow pulse */}
       <motion.div className="relative h-px" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#F3AE1C]/40 to-transparent" />
-        <motion.div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#F3AE1C]/60 to-transparent" animate={{ opacity: [0.3, 0.8, 0.3] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} />
+        <motion.div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#F3AE1C]/60 to-transparent" animate={!isMobile ? { opacity: [0.3, 0.8, 0.3] } : {}} transition={!isMobile ? { duration: 3, repeat: Infinity, ease: "easeInOut" } : {}} />
       </motion.div>
 
       {/* Background watermark */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden" aria-hidden="true">
         <motion.div
-          animate={{ rotate: [0, 360] }}
-          transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
+          animate={!isMobile ? { rotate: [0, 360] } : {}}
+          transition={!isMobile ? { duration: 120, repeat: Infinity, ease: "linear" } : {}}
           style={{ fontFamily: "'Cinzel', serif", fontSize: "clamp(12rem, 40vw, 28rem)", fontWeight: 900, color: "rgba(243,174,28,0.02)", lineHeight: 1, letterSpacing: "-0.05em" }}
         >M360</motion.div>
       </div>
@@ -374,7 +376,7 @@ function FooterSection() {
             <svg width="56" height="56" viewBox="0 0 56 56" fill="none" className="md:hidden">
               <circle cx="28" cy="28" r="26" stroke="#F3AE1C" strokeWidth="0.5" opacity="0.3" />
               <circle cx="28" cy="28" r="20" stroke="url(#goldGrad)" strokeWidth="1" />
-              <motion.circle cx="28" cy="28" r="20" stroke="#F3AE1C" strokeWidth="0.5" strokeDasharray="5 3" fill="none" animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} style={{ transformOrigin: "28px 28px" }} />
+              <motion.circle cx="28" cy="28" r="20" stroke="#F3AE1C" strokeWidth="0.5" strokeDasharray="5 3" fill="none" animate={!isMobile ? { rotate: 360 } : {}} transition={!isMobile ? { duration: 20, repeat: Infinity, ease: "linear" } : {}} style={{ transformOrigin: "28px 28px" }} />
               <text x="28" y="33" textAnchor="middle" fill="#F3AE1C" fontSize="14" fontFamily="Cinzel, serif" fontWeight="700">M</text>
               <defs>
                 <linearGradient id="goldGrad" x1="8" y1="8" x2="48" y2="48"><stop stopColor="#F3AE1C" /><stop offset="1" stopColor="#EFCF9E" /></linearGradient>
@@ -568,11 +570,12 @@ function FooterSection() {
 }
 
 function WebsitePreviewSection() {
+  const isMobile = useIsMobile()
   return (
     <section className="bg-[#070503] relative overflow-hidden">
       <HieroglyphicBg opacity={0.025} />
       <GoldRadialGlow position="top" />
-      <FloatingOrbs />
+      {!isMobile && <FloatingOrbs />}
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#F3AE1C]/30 to-transparent" />
       <ContainerScroll
         titleComponent={
