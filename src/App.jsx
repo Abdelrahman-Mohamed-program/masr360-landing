@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { motion, useMotionTemplate, useScroll, useTransform } from 'framer-motion'
+import { motion, useInView, useMotionTemplate, useScroll, useTransform } from 'framer-motion'
 import { GameProvider } from './context/GameContext'
 import Hero from './components/Hero'
 import WhatIsM360 from './components/WhatIsM360'
@@ -571,8 +571,14 @@ function FooterSection() {
 
 function WebsitePreviewSection() {
   const isMobile = useIsMobile()
+  // Drive the title animations off the section entering the viewport, not the
+  // title elements themselves — the section is tall (80rem) so by the time a
+  // title's own whileInView fires you're already deep in. Section-level
+  // detection makes the headings animate in right as you reach the section.
+  const sectionRef = useRef(null)
+  const isInView = useInView(sectionRef, { once: true, margin: '-100px' })
   return (
-    <section className="bg-[#070503] relative overflow-hidden">
+    <section ref={sectionRef} className="bg-[#070503] relative overflow-hidden">
       <HieroglyphicBg opacity={0.025} />
       <GoldRadialGlow position="top" />
       {!isMobile && <FloatingOrbs />}
@@ -595,8 +601,8 @@ function WebsitePreviewSection() {
             </div>
             <motion.p
               initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6 }}
               style={{ fontFamily: "'Poppins', sans-serif" }}
               className="text-[#F3AE1C] text-xs uppercase tracking-[0.3em] mt-3 mb-4"
             >
@@ -604,9 +610,8 @@ function WebsitePreviewSection() {
             </motion.p>
             <motion.h2
               initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.15 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.15, duration: 0.7 }}
               style={{
                 fontFamily: "'Cinzel', serif",
                 fontSize: "clamp(1.8rem, 4vw, 3.2rem)",
@@ -622,9 +627,8 @@ function WebsitePreviewSection() {
             </motion.h2>
             <motion.p
               initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3 }}
+              animate={isInView ? { opacity: 1 } : {}}
+              transition={{ delay: 0.3, duration: 0.6 }}
               style={{ fontFamily: "'Poppins', sans-serif" }}
               className="text-[#EFCF9E]/40 text-sm max-w-md mx-auto"
             >
